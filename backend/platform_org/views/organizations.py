@@ -9,6 +9,7 @@ now, see AGENTS.md for why that's a deliberate, separate follow-up.
 from datetime import UTC, datetime
 
 from django.utils.text import slugify
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -27,6 +28,15 @@ def _unique_slug(name: str) -> str:
 
 
 class OrganizationsView(APIView):
+    # Explicit, not relying on the process's DEFAULT_PERMISSION_CLASSES -
+    # this module's own standalone settings set that globally, but a host
+    # importing this app (e.g. apps/main) may set it to something else
+    # (or nothing) for ITS OWN reasons (platform-auth's login/signup need
+    # to stay public, so main can't just default every view to
+    # IsAuthenticated). Declaring it here makes this view correct
+    # regardless of the host's global default.
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         org_ids = OrgMembership.objects.filter(user_id=request.user.id).values_list("org_id", flat=True)
         orgs = Organization.objects.filter(id__in=org_ids).order_by("name")
