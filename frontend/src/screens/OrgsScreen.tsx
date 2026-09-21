@@ -70,7 +70,7 @@ function OrgsScreen({ accessToken }: OrgsScreenProps) {
       <div className="card mb-4">
         <div className="card-body">
           <h2 className="h5 mb-3">Create an organization</h2>
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="row g-2 align-items-start">
+          <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate className="row g-2 align-items-start">
             <div className="col-auto">
               <input
                 type="text"
