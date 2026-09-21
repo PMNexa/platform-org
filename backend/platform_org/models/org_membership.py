@@ -21,7 +21,10 @@ class OrgMembership(TimestampedModel):
     """
 
     id = models.UUIDField(primary_key=True, default=generate_uuid7, editable=False)
-    org = models.ForeignKey(Organization, on_delete=models.CASCADE, db_column="org_id")
+    # related_name="memberships" - OrganizationSerializer's `memberships`
+    # DynamicRelationField reads this reverse accessor by name when
+    # sideloaded (see serializers/organization.py).
+    org = models.ForeignKey(Organization, on_delete=models.CASCADE, db_column="org_id", related_name="memberships")
     user_id = models.UUIDField()
     status = models.CharField(max_length=16, choices=OrgMembershipStatus.choices, default=OrgMembershipStatus.ACTIVE)
     joined_at = models.DateTimeField()

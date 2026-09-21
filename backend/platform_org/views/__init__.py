@@ -1,3 +1,3 @@
-from platform_org.views.organizations import OrganizationsView
+from platform_org.views.organizations import OrganizationViewSet
 
-__all__ = ["OrganizationsView"]
+__all__ = ["OrganizationViewSet"]

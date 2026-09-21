@@ -87,5 +87,5 @@ CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["platform_org.authentication.JWTBearerAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "EXCEPTION_HANDLER": "core_api.exceptions.platform_org_exception_handler",
+    "EXCEPTION_HANDLER": "core_api.exceptions.platform_exception_handler",
 }
