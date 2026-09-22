@@ -1,5 +1,4 @@
-import { CrudEditScreen } from "platform-core";
-import { createOrgsCrudConfig } from "../lib/orgsCrudConfig";
+import { OrgsRouter } from "../lib/orgsRouter";
 import type { Organization } from "../lib/api/organizations";
 
 export interface OrgsEditScreenProps {
@@ -10,9 +9,9 @@ export interface OrgsEditScreenProps {
   onDeleted?: () => void;
 }
 
-/** The edit screen - `platform-core`'s `CrudEditScreen` preconfigured for `Organization`. */
-function OrgsEditScreen({ accessToken, id, onUpdated, onDeleted }: OrgsEditScreenProps) {
-  return <CrudEditScreen config={createOrgsCrudConfig(accessToken)} id={id} onUpdated={onUpdated} onDeleted={onDeleted} />;
+/** The edit screen - `OrgsRouter.Edit` (see `lib/orgsRouter.ts`), schema-driven (see `OrgsCreateScreen`'s own docstring). */
+function OrgsEditScreen(props: OrgsEditScreenProps) {
+  return <OrgsRouter.Edit {...props} />;
 }
 
 export default OrgsEditScreen;

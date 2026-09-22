@@ -1,5 +1,4 @@
-import { CrudCreateScreen } from "platform-core";
-import { createOrgsCrudConfig } from "../lib/orgsCrudConfig";
+import { OrgsRouter } from "../lib/orgsRouter";
 import type { Organization } from "../lib/api/organizations";
 
 export interface OrgsCreateScreenProps {
@@ -8,9 +7,9 @@ export interface OrgsCreateScreenProps {
   onCreated?: (org: Organization) => void;
 }
 
-/** The create screen - `platform-core`'s `CrudCreateScreen` preconfigured for `Organization` (just `name` - `slug` is server-derived, never a form field). */
-function OrgsCreateScreen({ accessToken, onCreated }: OrgsCreateScreenProps) {
-  return <CrudCreateScreen config={createOrgsCrudConfig(accessToken)} onCreated={onCreated} />;
+/** The create screen - `OrgsRouter.Create` (see `lib/orgsRouter.ts`), schema-driven (`orgsCrudConfig.ts`'s hand-written `name`-only field list is gone - nothing reads it anymore). */
+function OrgsCreateScreen(props: OrgsCreateScreenProps) {
+  return <OrgsRouter.Create {...props} />;
 }
 
 export default OrgsCreateScreen;

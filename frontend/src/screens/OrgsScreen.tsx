@@ -1,6 +1,5 @@
-import { CrudListScreen } from "platform-core";
 import type { LinkComponent } from "platform-core";
-import { createOrgsCrudConfig } from "../lib/orgsCrudConfig";
+import { OrgsRouter } from "../lib/orgsRouter";
 import type { Organization } from "../lib/api/organizations";
 
 export interface OrgsScreenProps {
@@ -16,9 +15,9 @@ export interface OrgsScreenProps {
   onDeleted?: (org: Organization) => void;
 }
 
-/** The list screen - `platform-core`'s `CrudListScreen` preconfigured for `Organization`. See `orgsCrudConfig.ts` for the actual API wiring. */
-function OrgsScreen({ accessToken, linkComponent, onDeleted }: OrgsScreenProps) {
-  return <CrudListScreen config={createOrgsCrudConfig(accessToken, linkComponent)} onDeleted={onDeleted} />;
+/** The list screen - `OrgsRouter.List` (see `lib/orgsRouter.ts`), schema-driven (`baseApi.schema()` loads first, then the list - see `platform-core`'s `CrudListScreen` docstring). */
+function OrgsScreen(props: OrgsScreenProps) {
+  return <OrgsRouter.List {...props} />;
 }
 
 export default OrgsScreen;
