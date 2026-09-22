@@ -1,7 +1,7 @@
 """/api/v1/orgs - a real BaseViewSet (see core_api.viewsets), replacing
 what used to be a hand-rolled APIView with its own GET/POST methods.
 Supports the standard ModelViewSet actions (list/create/retrieve/update/
-destroy) plus everything BaseViewSet wires in for free: `?sort=`,
+destroy) plus everything BaseViewSet wires in for free: `?sort=`, `?q=`,
 `?filter{field}=value`, and (via OrganizationSerializer) `?include[]=
 memberships` to sideload each org's memberships instead of leaving that
 field off.
@@ -34,6 +34,13 @@ def _unique_slug(name: str) -> str:
 class OrganizationViewSet(BaseViewSet):
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
+    # `QParamSearchFilter` (DRF's own `SearchFilter` under the `?q=` name
+    # - see core_api.filters) silently no-ops without this: it's a real
+    # DRF requirement, not something `BaseViewSet` can default sensibly
+    # per-module. Missing it isn't an error anywhere - `?q=` just filters
+    # nothing, which looks exactly like "the frontend's search box is
+    # broken" instead of a one-line gap here.
+    search_fields = ["name"]
     # Explicit, not relying on the process's DEFAULT_PERMISSION_CLASSES -
     # this module's own standalone settings set that globally, but a host
     # importing this app (e.g. apps/main) may set it to something else

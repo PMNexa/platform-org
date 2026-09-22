@@ -13,11 +13,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.9.1",
+    "platform-core": "file:../../platform-core/frontend",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-hook-form": "^7.88.0",
-    "zod": "^4.6.5"
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
