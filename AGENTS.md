@@ -113,33 +113,17 @@ dependencies once the hand-rolled create form went away — `platform-core`'s
 `CrudCreateScreen`/`CrudEditScreen` use plain `useState` (native
 `required` is the only validation - see platform-core's own AGENTS.md).
 
-### Routes (`src/routes/`) — the one exception to "no react-router dependency"
+### Routes — `createOrgsRoutes(basePath)`
 
-`orgs.tsx`/`orgs-new.tsx`/`orgs-edit.tsx` are real react-router route
-MODULES (`meta` + `default` component), not just screens — at the
-host's explicit request, org routing is owned here instead of hand-
-written per-host. `apps/main`'s `routes.ts` still registers the actual
-URL and still owns nesting; it just points `route()`'s `file` at a
-RELATIVE FILESYSTEM PATH into this package (`../../../platform-org/
-frontend/src/routes/orgs.tsx`), not a package import — react-router's
-`route()` resolves `file` with a plain `readFileSync` relative to the
-host's `appDirectory`, not real module resolution, so a bare specifier
-(even via this package's own `exports` map) just 404s. See root
-`AGENTS.md`'s note on this pattern for the full tradeoff (mainly:
-`react-router` itself now needs to stay deduped/version-matched with
-whatever host imports these files, the same way `react`/`react-dom`
-already had to be).
-
-Each route reads its access token via `useOutletContext<string>()`, fed
-by the host's own protected layout (`apps/main`'s `app-shell.tsx` gates
-on a session and renders `<Outlet context={accessToken}>`) — this
-package still holds no token store or session-reading logic of its own,
-same principle as the screens above, just satisfied through
-react-router's own context mechanism instead of a prop, since a route
-module's props are react-router's to fill (`params`, not arbitrary
-custom props). No `./+types/<name>` imports either — that generated-types
-mechanism only covers files under the HOST's own `app/` directory;
-`params` on `orgs-edit.tsx`'s default export is typed by hand instead.
+No route files of its own: orgs use `platform-core`'s generic
+`crud-list.tsx`/`crud-new.tsx`/`crud-edit.tsx`. `src/orgsRoutes.ts`
+exports `createOrgsRoutes(basePath)` from the main `"."` entry (no
+`"./routes"` subpath) - `createCrudRoutes("/api/v1/orgs")` wrapped in
+`platform-core`'s `prefixRoutes(basePath, ...)`. The host picks the
+mount: `apps/main` calls `...createOrgsRoutes("platform-org")`, giving
+`/platform-org/orgs[/new|/:id/edit]`. Browser-safe plain route-config
+objects (no `@react-router/dev`) - see `platform-core`'s AGENTS.md on
+why route builders exported from `"."` must stay that way.
 
 ## Running locally
 
