@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./routes": "./src/routes.ts"
   },
   "scripts": {
     "build": "tsc -b",
@@ -16,6 +17,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@react-router/dev": "^8.4.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
