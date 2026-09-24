@@ -28,10 +28,10 @@ error shape.
   unique).
 - `platform_org/models/org_membership.py` — `OrgMembership` (org FK,
   `user_id` — a bare `UUIDField`, **not** a ForeignKey; see that file's
-  own docstring for why). No roles/permissions yet — every member is
-  equal. That's a deliberate, separate follow-up (a `platform-rbac`
-  module, most likely) once there's an actual need to distinguish
-  members, not built preemptively.
+  own docstring for why). Roles live in platform-auth's RBAC, not
+  here: `OrganizationViewSet.scope_field = "id"` makes an org an RBAC
+  scope, so a role can be held within one org (see platform-auth's
+  AGENTS.md).
 - `platform_org/authentication.py` — `JWTBearerAuthentication`: decodes a
   JWT with the shared `JWT_SECRET`, resolves to a lightweight
   `ActorStub(id=..., is_authenticated=True)` — no DB lookup at all. When
@@ -124,6 +124,13 @@ mount: `apps/main` calls `...createOrgsRoutes("platform-org")`, giving
 `/platform-org/orgs[/new|/:id/edit]`. Browser-safe plain route-config
 objects (no `@react-router/dev`) - see `platform-core`'s AGENTS.md on
 why route builders exported from `"."` must stay that way.
+
+### Sidebar entries — `createOrgsNavItems(basePath)`
+
+`src/orgsNav.tsx`, also from `"."`: the "Organizations" sidebar link
+(its own inline icon, `permission: "orgs.view"`) for the host's AppShell.
+Pass the SAME `basePath` as `createOrgsRoutes` - `apps/main` does
+`...createOrgsNavItems("platform-org")` in `app-shell.tsx`'s `NAV_ITEMS`.
 
 ## Running locally
 

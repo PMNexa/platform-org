@@ -1,7 +1,8 @@
 /**
  * Package entry point - what a consuming app (apps/main) imports.
  *
- * The `Organization` type plus `createOrgsRoutes(basePath)` - `apps/main`
+ * The `Organization` type plus `createOrgsRoutes(basePath)` and
+ * `createOrgsNavItems(basePath)` (its sidebar entries) - `apps/main`
  * owns every actual URL for this resource itself (it calls
  * `createOrgsRoutes` with whatever mount prefix its own `routes.ts`
  * decides; the sidebar nav
@@ -18,3 +19,5 @@
  */
 export type { Organization } from "./types";
 export { createOrgsRoutes } from "./orgsRoutes";
+// Its sidebar entries - same `basePath` as `createOrgsRoutes`.
+export { createOrgsNavItems } from "./orgsNav";

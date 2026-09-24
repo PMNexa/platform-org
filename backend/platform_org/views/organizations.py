@@ -49,6 +49,9 @@ class OrganizationViewSet(BaseViewSet):
     # IsAuthenticated). Declaring it here makes this view correct
     # regardless of the host's global default.
     permission_classes = [IsAuthenticated]
+    # Access scope (core_api/access.py): an org is its own scope - a role
+    # held within an org applies to that org's row.
+    scope_field = "id"
 
     def get_queryset(self):
         org_ids = OrgMembership.objects.filter(user_id=self.request.user.id).values_list("org_id", flat=True)
