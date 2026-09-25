@@ -1,6 +1,11 @@
 /**
  * Package entry point - what a consuming app (apps/main) imports.
  *
+ * Membership: `OrgMembersPanel` (an org's members and invitations - the
+ * org page shows it), `InvitationsScreen` (invitations sent to me) and
+ * `AcceptInvitationScreen` (an invitation link's landing page), all
+ * mounted by `createOrgsRoutes`.
+ *
  * The `Organization` type plus `createOrgsRoutes(basePath)` and
  * `createOrgsNavItems(basePath)` (its sidebar entries) - `apps/main`
  * owns every actual URL for this resource itself (it calls
@@ -18,6 +23,13 @@
  * left around.
  */
 export type { Organization } from "./types";
-export { createOrgsRoutes } from "./orgsRoutes";
+export { createOrgsPublicRoutes, createOrgsRoutes } from "./orgsRoutes";
 // Its sidebar entries - same `basePath` as `createOrgsRoutes`.
 export { createOrgsNavItems } from "./orgsNav";
+export { default as OrgMembersPanel } from "./screens/OrgMembersPanel";
+export type { OrgMembersPanelProps } from "./screens/OrgMembersPanel";
+export { default as InvitationsScreen } from "./screens/InvitationsScreen";
+export type { InvitationsScreenProps } from "./screens/InvitationsScreen";
+export { default as AcceptInvitationScreen } from "./screens/AcceptInvitationScreen";
+export type { AcceptInvitationScreenProps } from "./screens/AcceptInvitationScreen";
+export type { Invitation, Member, OrgRole, ReceivedInvitation } from "./lib/api";

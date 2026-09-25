@@ -28,10 +28,25 @@ error shape.
   unique).
 - `platform_org/models/org_membership.py` — `OrgMembership` (org FK,
   `user_id` — a bare `UUIDField`, **not** a ForeignKey; see that file's
-  own docstring for why). Roles live in platform-auth's RBAC, not
-  here: `OrganizationViewSet.scope_field = "id"` makes an org an RBAC
-  scope, so a role can be held within one org (see platform-auth's
-  AGENTS.md).
+  own docstring for why). `role` is the member's say within the org
+  (`OrgRole`: owner / admin / member - owners manage everything incl.
+  other owners and deleting the org, admins rename it and manage non-owner
+  members and invitations, members take part); what a user may do with
+  each RESOURCE is still platform-auth's RBAC:
+  `OrganizationViewSet.scope_field = "id"` makes an org an RBAC scope, so
+  an RBAC role can be held within one org (see platform-auth's AGENTS.md).
+  The org role is checked in this module's own views, on top.
+- `platform_org/models/org_invitation.py` - `OrgInvitation`: org, email,
+  role (admin/member), secret `token` (the accept link), status
+  (pending/accepted/declined; revoking deletes it), 14-day `expires_at`.
+- `platform_org/directory.py` - who a user id is. No User table here, so
+  the host names a lookup in `PLATFORM_ORG_USER_DIRECTORY` (ids ->
+  `{name, email}`; `apps/main` points it at platform-auth's users). It
+  gives members their name/email and tells whose email an invitation is
+  for. Unset: members have no name/email, and an invitation can only be
+  accepted when `request.user` has an `email` itself.
+- `platform_org/membership.py` - the active-membership lookups every view
+  scopes by (only `status=active` rows count).
 - `platform_org/authentication.py` — `JWTBearerAuthentication`: decodes a
   JWT with the shared `JWT_SECRET`, resolves to a lightweight
   `ActorStub(id=..., is_authenticated=True)` — no DB lookup at all. When
@@ -65,6 +80,33 @@ error shape.
   `OrgMembership.org`) via a deferred-import function, not a plain
   module-level import - see `organization.py`'s own docstring for exactly
   why (a naive fix looks like it works and still deadlocks).
+- `views/members.py` - `OrgMembershipViewSet`, `/api/v1/org-members`:
+  members of every org the caller belongs to (`?filter{org}=`), each
+  with `name`/`email`/`is_me`. GET/PATCH(`role`)/DELETE only - you join
+  by accepting an invitation or creating the org. Owners change any role
+  (incl. making someone owner), admins change/remove non-owners, anyone
+  removes themselves (leaves). The last owner can't leave, be removed or
+  be demoted.
+- `views/invitations.py` - `OrgInvitationViewSet`, `/api/v1/org-invitations`
+  (GET/POST/DELETE): an org's owners/admins list, create (`{org, email,
+  role}`; one pending per email) and revoke invitations; members see none.
+  `org-invitations/token/<token>/public` needs no sign-in (the join
+  page): org, email, and `has_account` (host setting
+  `PLATFORM_ORG_ACCOUNT_EXISTS`) + `signup_page`
+  (`PLATFORM_ORG_SIGNUP_PAGE`), so a newcomer is sent to sign up.
+  Invitee side, plain views scoped by the caller's email:
+  `org-invitations/received`, `org-invitations/token/<token>` (preview,
+  with `for_me`/`already_member`), `.../accept`, `.../decline` - the
+  email must match; the token alone isn't enough. `urls.py` lists these
+  before the router, whose `org-invitations/<pk>` would swallow them.
+- `OrganizationViewSet` lists only ACTIVE memberships' orgs, annotates
+  `my_role`; the creator's membership is `owner`; rename needs
+  owner/admin, delete needs owner. `OrganizationSerializer` leaves off
+  the `memberships`/`invitations` relations (own endpoints; the org page
+  shows them in its own panel instead of generic tabs).
+- Migration 0003 makes each existing org's first member its owner, and
+  gives `role` a `db_default` so the previous release (still running
+  during a deploy) can insert memberships.
 - Every route requires authentication (`DEFAULT_PERMISSION_CLASSES:
   IsAuthenticated`) — there's no public endpoint in this module at all,
   unlike platform-auth's login/signup.
@@ -115,8 +157,9 @@ dependencies once the hand-rolled create form went away — `platform-core`'s
 
 ### Routes — `createOrgsRoutes(basePath)`
 
-No route files of its own: orgs use `platform-core`'s generic
-`crud-list.tsx`/`crud-new.tsx`/`crud-edit.tsx`. `src/orgsRoutes.ts`
+Orgs use `platform-core`'s generic `crud-list.tsx`/`crud-new.tsx`/
+`crud-edit.tsx`; the org page and the invitation pages are this
+package's own route files (see "Membership screens"). `src/orgsRoutes.ts`
 exports `createOrgsRoutes(basePath)` from the main `"."` entry (no
 `"./routes"` subpath) - `createCrudRoutes("/api/v1/orgs")` wrapped in
 `platform-core`'s `prefixRoutes(basePath, ...)`. The host picks the
@@ -125,10 +168,33 @@ mount: `apps/main` calls `...createOrgsRoutes("platform-org")`, giving
 objects (no `@react-router/dev`) - see `platform-core`'s AGENTS.md on
 why route builders exported from `"."` must stay that way.
 
+### Membership screens
+
+`OrgMembersPanel` (members + role selects + remove/leave, pending
+invitations with copy-link/revoke, "Invite member" modal - it shows the
+link to send, no email is sent), `InvitationsScreen` (invitations sent
+to me: accept/decline) and `AcceptInvitationScreen` (the link's landing
+page) - router-free screens taking `accessToken` (API calls: axios,
+`lib/api.ts`). `createOrgsRoutes` mounts them: the orgs' `detailFile` is
+`routes/org-detail.tsx` (platform-core's `CrudDetailScreen` + the
+panel), plus `<basePath>/invitations` and `<basePath>/invitations/:token/accept`.
+The link an org manager copies is `<basePath>/invitations/:token`, from
+`createOrgsPublicRoutes(basePath)` - mount it OUTSIDE the host's
+session gate: it works signed out and redirects to the host's signup
+(`?email=&next=`, when the backend says the email has no account) or to
+`invitations/:token/accept`.
+These route files import `react-router` (so it's a dependency, same
+version as main, deduped by the host). Known gap: the generic detail
+header shows Edit/Delete to plain members too (the schema's `can` is
+per resource, not per row) - the API refuses with 403.
+
 ### Sidebar entries — `createOrgsNavItems(basePath)`
 
-`src/orgsNav.tsx`, also from `"."`: the "Organizations" sidebar link
-(its own inline icon, `permission: "orgs.view"`) for the host's AppShell.
+`src/orgsNav.tsx`, also from `"."`: one "Organizations" sidebar group
+(its own inline icon) for the host's AppShell - "My organizations"
+(`permission: "orgs.view"`; an org's page manages its members and
+invitations) and "Invitations" (no permission - they're addressed to my
+email).
 Pass the SAME `basePath` as `createOrgsRoutes` - `apps/main` does
 `...createOrgsNavItems("platform-org")` in `app-shell.tsx`'s `NAV_ITEMS`.
 

@@ -7,17 +7,21 @@ memberships` to sideload each org's memberships instead of leaving that
 field off.
 
 Both list and create stay scoped to the calling actor, same as before:
-`get_queryset` only returns orgs they're a member of, `perform_create`
-makes them the new org's first (active) member.
+`get_queryset` only returns orgs they're an active member of,
+`perform_create` makes them the new org's first member, as its owner.
+Renaming takes an owner or admin, deleting an owner (`OrgRole`).
 """
 
 from datetime import UTC, datetime
 
+from django.db.models import OuterRef, Subquery
 from django.utils.text import slugify
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 from core_api.viewsets import BaseViewSet
-from platform_org.models import OrgMembership, Organization
+from platform_org.membership import active_memberships, member_org_ids, role_in
+from platform_org.models import MANAGER_ROLES, OrgMembership, Organization, OrgRole
 from platform_org.serializers import OrganizationSerializer
 
 
@@ -54,10 +58,30 @@ class OrganizationViewSet(BaseViewSet):
     scope_field = "id"
 
     def get_queryset(self):
-        org_ids = OrgMembership.objects.filter(user_id=self.request.user.id).values_list("org_id", flat=True)
-        return super().get_queryset().filter(id__in=org_ids).order_by("name")
+        user_id = self.request.user.id
+        my_role = active_memberships().filter(org_id=OuterRef("pk"), user_id=user_id).values("role")[:1]
+        return (
+            super()
+            .get_queryset()
+            .filter(id__in=member_org_ids(user_id))
+            .annotate(my_role=Subquery(my_role))
+            .order_by("name")
+        )
 
     def perform_create(self, serializer):
         name = serializer.validated_data["name"]
         org = serializer.save(slug=_unique_slug(name))
-        OrgMembership.objects.create(org=org, user_id=self.request.user.id, joined_at=datetime.now(UTC))
+        OrgMembership.objects.create(
+            org=org, user_id=self.request.user.id, role=OrgRole.OWNER, joined_at=datetime.now(UTC)
+        )
+        org.my_role = OrgRole.OWNER
+
+    def perform_update(self, serializer):
+        if role_in(serializer.instance.id, self.request.user.id) not in MANAGER_ROLES:
+            raise PermissionDenied("Only an owner or admin can change this organization.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if role_in(instance.id, self.request.user.id) != OrgRole.OWNER:
+            raise PermissionDenied("Only an owner can delete this organization.")
+        instance.delete()

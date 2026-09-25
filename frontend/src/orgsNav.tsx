@@ -33,9 +33,22 @@ function OrgsIcon() {
  * `basePath` as `createOrgsRoutes(basePath)`, so the link always points
  * where the routes are mounted (`"platform-org"` -> `/platform-org/orgs`).
  * `permission` is what a host filtering by RBAC checks (platform-auth's
- * `filterNavByPermissions`); a host without RBAC can ignore it.
+ * `filterNavByPermissions`); a host without RBAC can ignore it. One
+ * "Organizations" group: the orgs list (an org's page manages its
+ * members and invitations) and the invitations sent to me, which need no
+ * permission - they're addressed to my email.
  */
 export function createOrgsNavItems(basePath: string): NavEntry[] {
   const prefix = basePath.replace(/^\/+|\/+$/g, "");
-  return [{ label: "Organizations", to: `/${prefix ? `${prefix}/` : ""}orgs`, icon: <OrgsIcon />, permission: "orgs.view" }];
+  const base = `/${prefix ? `${prefix}/` : ""}`;
+  return [
+    {
+      label: "Organizations",
+      icon: <OrgsIcon />,
+      children: [
+        { label: "My organizations", to: `${base}orgs`, permission: "orgs.view" },
+        { label: "Invitations", to: `${base}invitations` },
+      ],
+    },
+  ];
 }
