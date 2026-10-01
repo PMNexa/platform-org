@@ -2,7 +2,8 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from core_api.registry import register_model_endpoint
-from platform_org.models import OrgInvitation, OrgMembership, Organization
+from platform_org.models import AdminOrganization, OrgInvitation, OrgMembership, Organization
+from platform_org.views.admin_orgs import AdminOrganizationViewSet
 from platform_org.views import (
     AcceptInvitationView,
     DeclineInvitationView,
@@ -22,6 +23,8 @@ router = SimpleRouter(trailing_slash=False)
 router.register("orgs", OrganizationViewSet, basename="orgs")
 router.register("org-members", OrgMembershipViewSet, basename="org-members")
 router.register("org-invitations", OrgInvitationViewSet, basename="org-invitations")
+# Every org, for the system admin (its own RBAC resource, all-orgs.*).
+router.register("all-orgs", AdminOrganizationViewSet, basename="all-orgs")
 
 # See core_api.registry's own docstring - lets a relation field's schema
 # (e.g. a future org-scoped resource) tell the frontend where to fetch
@@ -29,6 +32,7 @@ router.register("org-invitations", OrgInvitationViewSet, basename="org-invitatio
 register_model_endpoint(Organization, "/api/v1/orgs")
 register_model_endpoint(OrgMembership, "/api/v1/org-members")
 register_model_endpoint(OrgInvitation, "/api/v1/org-invitations")
+register_model_endpoint(AdminOrganization, "/api/v1/all-orgs")
 
 # The invitee's side (views/invitations.py) - listed before the router's
 # routes, whose `org-invitations/<pk>` would otherwise match "received".

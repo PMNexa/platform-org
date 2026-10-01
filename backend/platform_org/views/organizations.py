@@ -19,6 +19,7 @@ from django.utils.text import slugify
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
+from core_api.system import org_removed
 from core_api.viewsets import BaseViewSet
 from platform_org.membership import active_memberships, member_org_ids, role_in
 from platform_org.models import MANAGER_ROLES, OrgMembership, Organization, OrgRole
@@ -84,4 +85,6 @@ class OrganizationViewSet(BaseViewSet):
     def perform_destroy(self, instance):
         if role_in(instance.id, self.request.user.id) != OrgRole.OWNER:
             raise PermissionDenied("Only an owner can delete this organization.")
+        # Other modules drop what they keep under this org (goals, ...).
+        org_removed.send(sender=type(instance), org_id=str(instance.id))
         instance.delete()

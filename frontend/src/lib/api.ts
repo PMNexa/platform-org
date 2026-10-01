@@ -18,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-async function apiRequest<T>(path: string, accessToken: string, config?: AxiosRequestConfig): Promise<T> {
+export async function apiRequest<T>(path: string, accessToken: string, config?: AxiosRequestConfig): Promise<T> {
   const url = `${API_BASE_URL}${API}${path}`;
   try {
     const response = await axios.request<T>({

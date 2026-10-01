@@ -49,3 +49,19 @@ export function createOrgsPublicRoutes(basePath: string): RouteEntry[] {
     { id: "platform-org-join", path: "invitations/:token", file: routeFilePath(import.meta.url, "routes/join.tsx") },
   ]);
 }
+
+/**
+ * The system admin's "All organizations" (`/api/v1/all-orgs`, RBAC
+ * `all-orgs.*`) at a host-chosen mount - `createOrgAdminRoutes("system")`
+ * -> `/system/all-orgs`. Its sidebar link: `createOrgAdminNavItem`.
+ */
+export function createOrgAdminRoutes(basePath: string): RouteEntry[] {
+  return prefixRoutes(basePath, [
+    ...createCrudRoutes("/api/v1/all-orgs", { detailFile: routeFilePath(import.meta.url, "routes/admin-org-detail.tsx") }),
+  ]);
+}
+
+/** The link to `createOrgAdminRoutes(basePath)` - e.g. for platform-core's `createSystemNavItems(base, [item])`. */
+export function createOrgAdminNavItem(basePath: string) {
+  return { label: "All organizations", to: `/${basePath.replace(/^\/+|\/+$/g, "")}/all-orgs`, permission: "all-orgs.view" };
+}

@@ -30,9 +30,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core_api.system import check_org_limit, send_email
 from core_api.viewsets import BaseViewSet
 from platform_org.directory import account_exists, email_of, lookup_users
-from platform_org.membership import managed_org_ids, member_org_ids, role_in
+from platform_org.membership import active_memberships, managed_org_ids, member_org_ids, role_in
 from platform_org.models import (
     MANAGER_ROLES,
     OrgInvitation,
@@ -70,7 +71,34 @@ class OrgInvitationViewSet(BaseViewSet):
         )
         if pending.exists():
             raise ValidationError({"email": ["This email already has a pending invitation."]})
-        serializer.save(org=org, email=email, invited_by=self.request.user.id)
+        _check_member_limit(org)
+        invitation = serializer.save(org=org, email=email, invited_by=self.request.user.id)
+        _email_invitation(self.request, invitation)
+
+
+def _check_member_limit(org, *, accepting: bool = False) -> None:
+    """Members plus open invitations may not pass the org's member limit
+    (an invitation being accepted is already counted)."""
+    now = timezone.now()
+    open_invitations = OrgInvitation.objects.filter(org=org, status=OrgInvitationStatus.PENDING, expires_at__gt=now).count()
+    current = active_memberships().filter(org=org).count() + open_invitations - (1 if accepting else 0)
+    check_org_limit(org.id, "max_members", current, "members")
+
+
+def _email_invitation(request, invitation: OrgInvitation) -> None:
+    """Emails the invitation link (`PLATFORM_ORG_INVITATION_PAGE`, a path
+    with `{token}`, on the address the request came in on). The org page
+    still shows the link to copy - for an instance without email."""
+    page = getattr(settings, "PLATFORM_ORG_INVITATION_PAGE", "/invitations/{token}")
+    url = request.build_absolute_uri("/").rstrip("/") + page.format(token=invitation.token)
+    inviter = getattr(request.user, "name", "") or "Someone"
+    send_email(
+        invitation.email,
+        f"{inviter} invited you to {invitation.org.name}",
+        f"Hi,\n\n{inviter} invited you to join {invitation.org.name} on GoalNexa as {invitation.role}.\n\n"
+        f"Open the invitation:\n\n{url}\n\nIt expires on {invitation.expires_at:%B %d, %Y}.",
+        kind="org_invitation",
+    )
 
 
 def _describe(invitation: OrgInvitation, directory: dict) -> dict:
@@ -159,6 +187,8 @@ class AcceptInvitationView(APIView):
     def post(self, request, token):
         invitation = _invitation(token)
         _check_addressee(request, invitation)
+        if not active_memberships().filter(org_id=invitation.org_id, user_id=request.user.id).exists():
+            _check_member_limit(invitation.org, accepting=True)
         membership, created = OrgMembership.objects.get_or_create(
             org_id=invitation.org_id,
             user_id=request.user.id,

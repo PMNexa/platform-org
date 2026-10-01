@@ -23,7 +23,8 @@
  * left around.
  */
 export type { Organization } from "./types";
-export { createOrgsPublicRoutes, createOrgsRoutes } from "./orgsRoutes";
+export { createOrgAdminNavItem, createOrgAdminRoutes, createOrgsPublicRoutes, createOrgsRoutes } from "./orgsRoutes";
+export { default as AdminOrgPanel } from "./screens/AdminOrgPanel";
 // Its sidebar entries - same `basePath` as `createOrgsRoutes`.
 export { createOrgsNavItems } from "./orgsNav";
 export { default as OrgMembersPanel } from "./screens/OrgMembersPanel";
