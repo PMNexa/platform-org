@@ -22,6 +22,9 @@ class OrganizationSerializer(BaseSerializer):
 
     class Meta:
         model = Organization
-        extra_kwargs = {"slug": {"read_only": True}}
+        extra_kwargs = {
+            "name": {"help_text": "The name of your team or company. Its members share the organization's goals."},
+            "slug": {"read_only": True, "help_text": "A short name for web addresses. Made from the name for you."},
+        }
         # `limits` is the system admin's (all-orgs), not the org's own.
         auto_exclude = ["created_at", "updated_at", "memberships", "invitations", "limits"]
