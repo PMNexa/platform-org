@@ -115,6 +115,14 @@ Also an **importable pip package**: `pyproject.toml` packages
 `platform_org` as an importable unit (no longer `core_api` too - see
 above).
 
+## API reference (OpenAPI)
+
+Orgs, memberships and invitations are `BaseViewSet`s, documented
+automatically - give new fields `help_text`. The plain invitation views
+(by token, accept, decline, received) still show only their docstrings -
+annotate them with `@extend_schema`. How: GoalNexa's
+`docs/api-reference.md`.
+
 ## Frontend (`frontend/`)
 
 React + Vite + TypeScript, also an **npm package**
