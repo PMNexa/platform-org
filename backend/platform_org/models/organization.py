@@ -14,6 +14,9 @@ class Organization(TimestampedModel):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
     limits = models.JSONField(default=dict, blank=True, db_default={})
+    # Where the org's day starts (IANA name, e.g. "Asia/Ho_Chi_Minh") - other
+    # modules count days, weeks and months in it (goalnexa's quotas). Blank = UTC.
+    timezone = models.CharField(max_length=64, blank=True, default="", db_default="")
 
     class Meta:
         db_table = "organization"

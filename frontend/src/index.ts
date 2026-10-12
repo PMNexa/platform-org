@@ -28,9 +28,11 @@ export { default as AdminOrgPanel } from "./screens/AdminOrgPanel";
 // Its sidebar entries - same `basePath` as `createOrgsRoutes`.
 export { createOrgsNavItems } from "./orgsNav";
 export { default as OrgMembersPanel } from "./screens/OrgMembersPanel";
+export { default as TeamMembersPanel } from "./screens/TeamMembersPanel";
+export type { TeamMembersPanelProps } from "./screens/TeamMembersPanel";
 export type { OrgMembersPanelProps } from "./screens/OrgMembersPanel";
 export { default as InvitationsScreen } from "./screens/InvitationsScreen";
 export type { InvitationsScreenProps } from "./screens/InvitationsScreen";
 export { default as AcceptInvitationScreen } from "./screens/AcceptInvitationScreen";
 export type { AcceptInvitationScreenProps } from "./screens/AcceptInvitationScreen";
-export type { Invitation, Member, OrgRole, ReceivedInvitation } from "./lib/api";
+export type { Invitation, Member, OrgRole, ReceivedInvitation, Team, TeamMember, TeamRole } from "./lib/api";

@@ -172,3 +172,48 @@ export function declineInvitation(accessToken: string, token: string): Promise<v
 export function errorMessage(thrown: unknown): string {
   return thrown instanceof Error ? thrown.message : String(thrown);
 }
+
+export type TeamRole = "lead" | "member";
+
+export const TEAM_ROLE_LABELS: Record<TeamRole, string> = { lead: "Lead", member: "Member" };
+
+export interface Team {
+  id: string;
+  name: string;
+  org: string;
+  parent: string | null;
+}
+
+export interface TeamMember {
+  id: string;
+  team: string;
+  user_id: string;
+  name: string | null;
+  email: string | null;
+  role: TeamRole;
+  is_me: boolean;
+}
+
+export function getTeam(accessToken: string, teamId: string): Promise<Team> {
+  return apiRequest<Team>(`/teams/${teamId}`, accessToken);
+}
+
+export async function listTeamMembers(accessToken: string, teamId: string): Promise<TeamMember[]> {
+  const body = await apiRequest<Page<TeamMember>>("/team-members", accessToken, { params: { "filter{team}": teamId, ...ALL } });
+  return body.items;
+}
+
+export function addTeamMember(
+  accessToken: string,
+  input: { team: string; user_id: string; role: TeamRole },
+): Promise<TeamMember> {
+  return apiRequest<TeamMember>("/team-members", accessToken, { method: "POST", data: input });
+}
+
+export function changeTeamRole(accessToken: string, membershipId: string, role: TeamRole): Promise<TeamMember> {
+  return apiRequest<TeamMember>(`/team-members/${membershipId}`, accessToken, { method: "PATCH", data: { role } });
+}
+
+export function removeTeamMember(accessToken: string, membershipId: string): Promise<void> {
+  return apiRequest<void>(`/team-members/${membershipId}`, accessToken, { method: "DELETE" });
+}

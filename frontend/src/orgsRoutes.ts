@@ -14,6 +14,8 @@ const ORGS_API_PATH = "/api/v1/orgs";
  * - `orgs[/new|/:id|/:id/edit]` - platform-core's generic CRUD screens,
  *   except the org page (`routes/org-detail.tsx`: the generic detail plus
  *   the members panel);
+ * - `teams[/new|/:id|/:id/edit]` - the same for an org's teams, the team
+ *   page adding its members (`routes/team-detail.tsx`);
  * - `invitations` - the invitations sent to me;
  * - `invitations/:token/accept` - accept/decline one (the invitation link
  *   itself, `invitations/:token`, is `createOrgsPublicRoutes`').
@@ -28,6 +30,8 @@ const ORGS_API_PATH = "/api/v1/orgs";
 export function createOrgsRoutes(basePath: string): RouteEntry[] {
   return prefixRoutes(basePath, [
     ...createCrudRoutes(ORGS_API_PATH, { detailFile: routeFilePath(import.meta.url, "routes/org-detail.tsx") }),
+    // Teams inside an org (a tree): the generic pages, a team's page adds its members.
+    ...createCrudRoutes("/api/v1/teams", { detailFile: routeFilePath(import.meta.url, "routes/team-detail.tsx") }),
     { id: "platform-org-invitations", path: "invitations", file: routeFilePath(import.meta.url, "routes/invitations.tsx") },
     {
       id: "platform-org-invitation",

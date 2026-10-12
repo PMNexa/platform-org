@@ -22,3 +22,24 @@ def role_in(org_id, user_id) -> str | None:
 
 def owner_count(org_id) -> int:
     return active_memberships().filter(org_id=org_id, role=OrgRole.OWNER).count()
+
+
+def team_parents(org_id) -> dict:
+    """`{team_id: parent_id}` for every team of `org_id`."""
+    from platform_org.models import Team
+
+    return dict(Team.objects.filter(org_id=org_id).values_list("id", "parent_id"))
+
+
+def descendant_ids(parents: dict, team_id) -> set:
+    """`team_id`'s sub-teams at any depth (not itself), from `team_parents`."""
+    children: dict = {}
+    for child, parent in parents.items():
+        children.setdefault(parent, []).append(child)
+    found, stack = set(), list(children.get(team_id, []))
+    while stack:
+        current = stack.pop()
+        if current not in found:
+            found.add(current)
+            stack.extend(children.get(current, []))
+    return found

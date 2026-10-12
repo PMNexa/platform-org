@@ -47,6 +47,7 @@ export function createOrgsNavItems(basePath: string): NavEntry[] {
       icon: <OrgsIcon />,
       children: [
         { label: "My organizations", to: `${base}orgs`, permission: "orgs.view" },
+        { label: "Teams", to: `${base}teams`, permission: "teams.view" },
         { label: "Invitations", to: `${base}invitations` },
       ],
     },

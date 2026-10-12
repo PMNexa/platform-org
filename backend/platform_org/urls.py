@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from core_api.registry import register_model_endpoint
-from platform_org.models import AdminOrganization, OrgInvitation, OrgMembership, Organization
+from platform_org.models import AdminOrganization, OrgInvitation, OrgMembership, Organization, Team, TeamMembership
 from platform_org.views.admin_orgs import AdminOrganizationViewSet
 from platform_org.views import (
     AcceptInvitationView,
@@ -13,6 +13,8 @@ from platform_org.views import (
     OrganizationViewSet,
     PublicInvitationView,
     ReceivedInvitationsView,
+    TeamMembershipViewSet,
+    TeamViewSet,
 )
 
 # trailing_slash=False - keeps the exact "orgs" path platform-org-frontend
@@ -23,6 +25,9 @@ router = SimpleRouter(trailing_slash=False)
 router.register("orgs", OrganizationViewSet, basename="orgs")
 router.register("org-members", OrgMembershipViewSet, basename="org-members")
 router.register("org-invitations", OrgInvitationViewSet, basename="org-invitations")
+# Teams inside an org, a tree, and who is in each (views/teams.py).
+router.register("teams", TeamViewSet, basename="teams")
+router.register("team-members", TeamMembershipViewSet, basename="team-members")
 # Every org, for the system admin (its own RBAC resource, all-orgs.*).
 router.register("all-orgs", AdminOrganizationViewSet, basename="all-orgs")
 
@@ -33,6 +38,8 @@ register_model_endpoint(Organization, "/api/v1/orgs")
 register_model_endpoint(OrgMembership, "/api/v1/org-members")
 register_model_endpoint(OrgInvitation, "/api/v1/org-invitations")
 register_model_endpoint(AdminOrganization, "/api/v1/all-orgs")
+register_model_endpoint(Team, "/api/v1/teams")
+register_model_endpoint(TeamMembership, "/api/v1/team-members")
 
 # The invitee's side (views/invitations.py) - listed before the router's
 # routes, whose `org-invitations/<pk>` would otherwise match "received".

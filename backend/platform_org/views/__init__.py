@@ -8,6 +8,7 @@ from platform_org.views.invitations import (
 )
 from platform_org.views.members import OrgMembershipViewSet
 from platform_org.views.organizations import OrganizationViewSet
+from platform_org.views.teams import TeamMembershipViewSet, TeamViewSet
 
 __all__ = [
     "AcceptInvitationView",
@@ -18,4 +19,6 @@ __all__ = [
     "OrganizationViewSet",
     "PublicInvitationView",
     "ReceivedInvitationsView",
+    "TeamMembershipViewSet",
+    "TeamViewSet",
 ]

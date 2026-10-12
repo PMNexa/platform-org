@@ -11,12 +11,14 @@ Registered in apps.py."""
 
 from django.utils import timezone
 
-from platform_org.models import OrgMembership, OrgMembershipStatus, OrgRole, Organization
+from platform_org.models import OrgMembership, OrgMembershipStatus, OrgRole, Organization, TeamMembership
 
 RANK = {OrgRole.MEMBER: 0, OrgRole.ADMIN: 1, OrgRole.OWNER: 2}
 
 
 def on_user_removed(sender, user_id, transfer_to=None, **kwargs):
+    # Team places are personal - not handed on.
+    TeamMembership.objects.filter(user_id=user_id).delete()
     memberships = list(OrgMembership.objects.filter(user_id=user_id))
     for membership in memberships:
         org_id = membership.org_id
@@ -78,6 +80,10 @@ def export(user_id: str) -> dict:
         "memberships": [
             {"org": m.org.name, "org_id": str(m.org_id), "role": m.role, "status": m.status, "joined_at": m.joined_at}
             for m in OrgMembership.objects.filter(user_id=user_id).select_related("org")
+        ],
+        "teams": [
+            {"team": m.team.name, "team_id": str(m.team_id), "org_id": str(m.team.org_id), "role": m.role}
+            for m in TeamMembership.objects.filter(user_id=user_id).select_related("team")
         ],
         "invitations_sent": [
             {"org": i.org.name, "email": i.email, "role": i.role, "status": i.status, "created_at": i.created_at}

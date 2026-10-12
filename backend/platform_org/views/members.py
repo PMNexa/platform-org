@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from core_api.viewsets import BaseViewSet
 from platform_org.membership import active_memberships, member_org_ids, owner_count, role_in
-from platform_org.models import MANAGER_ROLES, OrgMembership, OrgRole
+from platform_org.models import MANAGER_ROLES, OrgMembership, OrgRole, TeamMembership
 from platform_org.serializers import OrgMembershipSerializer
 
 LAST_OWNER = "An organization needs an owner - make someone else owner first."
@@ -63,4 +63,6 @@ class OrgMembershipViewSet(BaseViewSet):
                 raise PermissionDenied("Only an owner can remove an owner.")
         if instance.role == OrgRole.OWNER and owner_count(instance.org_id) <= 1:
             raise ValidationError({"role": [LAST_OWNER]})
+        # Teams are inside the org - leaving it leaves them too.
+        TeamMembership.objects.filter(team__org_id=instance.org_id, user_id=instance.user_id).delete()
         instance.delete()
