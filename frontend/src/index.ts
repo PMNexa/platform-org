@@ -30,6 +30,8 @@ export { createOrgsNavItems } from "./orgsNav";
 export { default as OrgMembersPanel } from "./screens/OrgMembersPanel";
 export { default as TeamMembersPanel } from "./screens/TeamMembersPanel";
 export type { TeamMembersPanelProps } from "./screens/TeamMembersPanel";
+export { default as TeamChartScreen } from "./screens/TeamChartScreen";
+export type { TeamChartScreenProps } from "./screens/TeamChartScreen";
 export type { OrgMembersPanelProps } from "./screens/OrgMembersPanel";
 export { default as InvitationsScreen } from "./screens/InvitationsScreen";
 export type { InvitationsScreenProps } from "./screens/InvitationsScreen";

@@ -217,3 +217,45 @@ export function changeTeamRole(accessToken: string, membershipId: string, role: 
 export function removeTeamMember(accessToken: string, membershipId: string): Promise<void> {
   return apiRequest<void>(`/team-members/${membershipId}`, accessToken, { method: "DELETE" });
 }
+
+/** Every page of a list (the API returns at most 100 rows a page). */
+async function listAll<T>(path: string, accessToken: string, params: Record<string, string> = {}): Promise<T[]> {
+  const rows: T[] = [];
+  for (let page = 1; ; page++) {
+    const body = await apiRequest<Page<T> & { total: number }>(path, accessToken, { params: { ...params, ...ALL, page } });
+    rows.push(...body.items);
+    if (!body.items.length || rows.length >= body.total) return rows;
+  }
+}
+
+export interface TeamWithPosition extends Team {
+  position: number;
+}
+
+export function listMyOrgs(accessToken: string): Promise<OrgSummary[]> {
+  return listAll<OrgSummary>("/orgs", accessToken, { sort: "name" });
+}
+
+export function listOrgTeams(accessToken: string, orgId: string): Promise<TeamWithPosition[]> {
+  return listAll<TeamWithPosition>("/teams", accessToken, { "filter{org}": orgId });
+}
+
+/** Team memberships of the given teams (the API lists every team of the caller's orgs). */
+export async function listMembershipsOf(accessToken: string, teamIds: string[]): Promise<TeamMember[]> {
+  if (!teamIds.length) return [];
+  const wanted = new Set(teamIds);
+  return (await listAll<TeamMember>("/team-members", accessToken)).filter((m) => wanted.has(m.team));
+}
+
+export function createTeam(accessToken: string, input: { org: string; name: string; parent: string | null }): Promise<Team> {
+  return apiRequest<Team>("/teams", accessToken, { method: "POST", data: input });
+}
+
+export function updateTeam(accessToken: string, teamId: string, input: { name?: string; parent?: string | null }): Promise<Team> {
+  return apiRequest<Team>(`/teams/${teamId}`, accessToken, { method: "PATCH", data: input });
+}
+
+/** Sub-teams move up to the deleted team's parent; goals filed under it move there too, or are archived. */
+export function deleteTeam(accessToken: string, teamId: string, instances: "move" | "archive"): Promise<void> {
+  return apiRequest<void>(`/teams/${teamId}`, accessToken, { method: "DELETE", params: { instances } });
+}
