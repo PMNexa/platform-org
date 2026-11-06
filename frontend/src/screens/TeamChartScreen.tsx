@@ -77,8 +77,10 @@ button.po-role:hover{border-color:currentColor}
 .po-link{border:0;background:none;padding:0;color:var(--tblr-primary,#206bc4)}
 .po-link:hover{text-decoration:underline}
 .po-muted{color:var(--tblr-secondary,#667382)}
-.po-tag{font-size:11px;line-height:16px;padding:0 6px;border-radius:8px;background:var(--tblr-bg-surface-tertiary,#eef1f5);color:var(--tblr-secondary,#667382);white-space:nowrap}
-.po-placeholder .po-person{font-style:italic}
+.po-placeholder .po-person{font-style:italic;color:var(--tblr-secondary,#667382)}
+.po-icon-btn{border:0;background:none;padding:0 2px;color:var(--tblr-secondary,#667382);line-height:1}
+.po-icon-btn:hover,.po-icon-btn:focus-visible{color:var(--tblr-primary,#206bc4)}
+.po-icon-btn .icon{width:14px;height:14px;margin:0}
 `;
 
 type Dialog =
@@ -253,16 +255,16 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
                     {personName(m)}
                     {m.is_me && <span className="po-muted"> (you)</span>}
                   </span>
-                  {m.placeholder &&
-                    (manager ? (
-                      <button type="button" className="po-role" disabled={busy} title="Rename, invite or link to an account"
-                        aria-label={`${personName(m)} has no account - rename, invite or link to an account`}
-                        onClick={() => setDialog({ kind: "person", membership: m })}>
-                        No account
-                      </button>
-                    ) : (
-                      <span className="po-tag">No account</span>
-                    ))}
+                  {/* An icon, not a "No account" badge: the card is narrow, and a
+                      text badge next to the role left no room for the name.
+                      The italic, muted name is the cue; the tooltip says it. */}
+                  {m.placeholder && manager && (
+                    <button type="button" className="po-icon-btn" disabled={busy} title="No account - rename, invite or link to an account"
+                      aria-label={`${personName(m)} has no account - rename, invite or link to an account`}
+                      onClick={() => setDialog({ kind: "person", membership: m })}>
+                      <Icon name="link" />
+                    </button>
+                  )}
                   {manager ? (
                     <button type="button" className={`po-role${m.role === "lead" ? " po-lead" : ""}`} disabled={busy}
                       title={m.role === "lead" ? "Make a member" : "Make lead"}
