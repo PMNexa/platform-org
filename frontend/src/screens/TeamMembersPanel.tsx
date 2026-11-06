@@ -102,6 +102,11 @@ function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
                     <td>
                       {member.name ?? member.email ?? member.user_id}
                       {member.is_me && <span className="text-secondary"> (you)</span>}
+                      {member.placeholder && (
+                        <span className="badge bg-secondary-lt ms-2" title="The team's lead checks in for them. Link them to an account on the org chart.">
+                          No account
+                        </span>
+                      )}
                       {member.email && member.name && <div className="text-secondary small">{member.email}</div>}
                     </td>
                     <td>

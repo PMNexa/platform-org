@@ -11,21 +11,30 @@ parent too.
 
 `/api/v1/team-members`: every org member sees the org's team memberships;
 owners and admins add (an active org member, once per team), change the
-role of (lead / member) and remove them. Anyone can leave a team.
+role of (lead / member) and remove them. Anyone can leave a team. They can
+also add someone with no account yet - a placeholder (`placeholder_name`),
+who can be added to more teams by id, renamed, and later turned into an
+account: `POST team-members/<id>/convert {"user_id"}` (an active org
+member; every team place and goal of the placeholder moves to them).
 """
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Max
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from core_api.system import team_changed, team_removed
 from core_api.viewsets import BaseViewSet
 from platform_org.membership import active_memberships, descendant_ids, member_org_ids, role_in, team_parents
-from platform_org.models import MANAGER_ROLES, Organization, Team, TeamMembership
+from platform_org.models import MANAGER_ROLES, Organization, Placeholder, Team, TeamMembership
+from platform_org.placeholders import convert
 from platform_org.serializers import TeamMembershipSerializer, TeamSerializer
 
 MANAGERS_ONLY = "Only an owner or admin of the organization can change its teams."
@@ -131,8 +140,19 @@ class TeamMembershipViewSet(BaseViewSet):
             raise ValidationError({"team": ["This field is required."]})
         team = get_object_or_404(Team.objects.filter(org_id__in=member_org_ids(self.request.user.id)), id=team_id)
         _check_manager(team.org_id, self.request.user.id)
-        user_id = serializer.validated_data["user_id"]
-        if not active_memberships().filter(org_id=team.org_id, user_id=user_id).exists():
+        data = serializer.validated_data
+        name = (data.pop("placeholder_name", "") or "").strip()
+        email = (data.pop("placeholder_email", "") or "").strip().lower()
+        if name:
+            # Someone with no account yet.
+            placeholder = Placeholder.objects.create(org_id=team.org_id, name=name, email=email)
+            serializer.save(team=team, user_id=placeholder.id)
+            return
+        user_id = data.get("user_id")
+        if not user_id:
+            raise ValidationError({"user_id": ["Pick a person, or give the name of someone with no account yet."]})
+        is_member = active_memberships().filter(org_id=team.org_id, user_id=user_id).exists()
+        if not is_member and not Placeholder.objects.filter(org_id=team.org_id, id=user_id).exists():
             raise ValidationError({"user_id": ["Only a member of the organization can join one of its teams."]})
         if TeamMembership.objects.filter(team=team, user_id=user_id).exists():
             raise ValidationError({"user_id": ["Already in this team."]})
@@ -141,11 +161,48 @@ class TeamMembershipViewSet(BaseViewSet):
     def perform_update(self, serializer):
         membership = serializer.instance
         _check_manager(membership.team.org_id, self.request.user.id)
-        if str(serializer.validated_data.get("user_id", membership.user_id)) != str(membership.user_id):
+        data = serializer.validated_data
+        if str(data.get("user_id", membership.user_id)) != str(membership.user_id):
             raise ValidationError({"user_id": ["Remove the membership and add the other person instead."]})
+        name = data.pop("placeholder_name", None)
+        email = data.pop("placeholder_email", None)
+        if name is not None or email is not None:
+            placeholder = Placeholder.objects.filter(id=membership.user_id).first()
+            if placeholder is None:
+                raise ValidationError({"placeholder_name": ["Only a placeholder's name can be changed here."]})
+            if name is not None:
+                if not name.strip():
+                    raise ValidationError({"placeholder_name": ["A name is needed."]})
+                placeholder.name = name.strip()
+            if email is not None:
+                placeholder.email = email.strip().lower()
+            placeholder.save(update_fields=["name", "email", "updated_at"])
         serializer.save(team=membership.team)
 
     def perform_destroy(self, instance):
         if str(instance.user_id) != str(self.request.user.id):
             _check_manager(instance.team.org_id, self.request.user.id)
         instance.delete()
+
+    @extend_schema(
+        description="Turn a placeholder (someone added to teams before they had an account) into a member of "
+        "the organization: every team they're in, and whatever other modules keep for them (their own goals), "
+        "moves to that user, and the placeholder is gone. Owners and admins of the organization.",
+        request=inline_serializer("ConvertPlaceholder", {
+            "user_id": serializers.UUIDField(help_text="An active member of the team's organization."),
+        }),
+        responses={200: inline_serializer("ConvertedPlaceholder", {"user_id": serializers.UUIDField()})},
+    )
+    @action(detail=True, methods=["post"])
+    def convert(self, request, pk=None):
+        membership = self.get_object()
+        _check_manager(membership.team.org_id, request.user.id)
+        placeholder = Placeholder.objects.filter(id=membership.user_id, org_id=membership.team.org_id).first()
+        if placeholder is None:
+            raise ValidationError({"user_id": ["This person already has an account."]})
+        user_id = str(request.data.get("user_id") or "")
+        try:
+            convert(placeholder, user_id)
+        except (ValueError, DjangoValidationError) as error:
+            raise ValidationError({"user_id": ["Only a member of the organization."]}) from error
+        return Response({"user_id": user_id})

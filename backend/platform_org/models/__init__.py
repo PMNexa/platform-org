@@ -1,7 +1,7 @@
 from platform_org.models.org_invitation import OrgInvitation, OrgInvitationStatus
 from platform_org.models.org_membership import MANAGER_ROLES, OrgMembership, OrgMembershipStatus, OrgRole
 from platform_org.models.organization import AdminOrganization, Organization
-from platform_org.models.team import Team, TeamMembership, TeamRole
+from platform_org.models.team import Placeholder, Team, TeamMembership, TeamRole
 
 __all__ = [
     "MANAGER_ROLES",
@@ -12,6 +12,7 @@ __all__ = [
     "OrgMembershipStatus",
     "OrgRole",
     "Organization",
+    "Placeholder",
     "Team",
     "TeamMembership",
     "TeamRole",
