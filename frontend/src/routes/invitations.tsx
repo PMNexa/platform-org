@@ -1,10 +1,12 @@
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import InvitationsScreen from "../screens/InvitationsScreen";
 import { joinPath, mountPrefix } from "./paths";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Invitations" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("invitations") }];
 }
 
 /** Registered by `createOrgsRoutes()` at `<basePath>/invitations`. */

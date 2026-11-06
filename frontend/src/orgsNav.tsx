@@ -1,4 +1,5 @@
-import type { NavEntry } from "platform-core";
+import { translate, type NavEntry } from "platform-core";
+import messages from "./orgsNav.messages";
 
 /** Tabler Icons "building" (outline, MIT) - inlined, no icon font. */
 function OrgsIcon() {
@@ -36,19 +37,20 @@ function OrgsIcon() {
  * `filterNavByPermissions`); a host without RBAC can ignore it. One
  * "Organizations" group: the orgs list (an org's page manages its
  * members and invitations) and the invitations sent to me, which need no
- * permission - they're addressed to my email.
+ * permission - they're addressed to my email. Labels are in the current
+ * language: call it at render time (the host rebuilds its list each render).
  */
 export function createOrgsNavItems(basePath: string): NavEntry[] {
   const prefix = basePath.replace(/^\/+|\/+$/g, "");
   const base = `/${prefix ? `${prefix}/` : ""}`;
   return [
     {
-      label: "Organizations",
+      label: translate(messages, "organizations"),
       icon: <OrgsIcon />,
       children: [
-        { label: "My organizations", to: `${base}orgs`, permission: "orgs.view" },
-        { label: "Teams", to: `${base}teams`, permission: "teams.view" },
-        { label: "Invitations", to: `${base}invitations` },
+        { label: translate(messages, "myOrganizations"), to: `${base}orgs`, permission: "orgs.view" },
+        { label: translate(messages, "teams"), to: `${base}teams`, permission: "teams.view" },
+        { label: translate(messages, "invitations"), to: `${base}invitations` },
       ],
     },
   ];

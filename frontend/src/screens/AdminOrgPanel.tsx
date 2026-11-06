@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, formatNumber, useT } from "platform-core";
 import { apiRequest } from "../lib/api";
+import messages from "./AdminOrgPanel.messages";
+import roleMessages from "./roles.messages";
 
 export interface AdminOrgPanelProps {
   accessToken: string;
@@ -28,10 +30,15 @@ interface AdminMember {
   joined_at: string;
 }
 
-const LIMITS: { key: "max_members" | "max_goals"; label: string }[] = [
-  { key: "max_members", label: "Members (incl. pending invitations)" },
-  { key: "max_goals", label: "Goals" },
-];
+const LIMITS = [
+  { key: "max_members", label: "limitMembers" },
+  { key: "max_goals", label: "limitGoals" },
+] as const;
+
+/** A role or status as shown; a value this screen doesn't know stays as the API sent it. */
+function shown(t: (key: keyof (typeof roleMessages)["en"]) => string, value: string): string {
+  return value in roleMessages.en ? t(value as keyof (typeof roleMessages)["en"]) : value;
+}
 
 /**
  * The system admin's tools for one organization (`/api/v1/all-orgs/<id>`,
@@ -40,6 +47,8 @@ const LIMITS: { key: "max_members" | "max_goals"; label: string }[] = [
  * someone (an org whose owner left), and deleting it with its goals.
  */
 function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPanelProps) {
+  const t = useT(messages);
+  const roles = useT(roleMessages);
   const [org, setOrg] = useState<AdminOrg | null>(null);
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -92,7 +101,7 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
   if (!org) {
     return (
       <Card className="mt-3">
-        <CardBody>{error ? <div className="text-danger">{error}</div> : <div className="text-secondary">Loading…</div>}</CardBody>
+        <CardBody>{error ? <div className="text-danger">{error}</div> : <div className="text-secondary">{t("loading")}</div>}</CardBody>
       </Card>
     );
   }
@@ -109,43 +118,43 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
     <div className="d-flex flex-column gap-3 mt-3">
       <Card>
         <CardHeader>
-          <CardTitle>Members</CardTitle>
+          <CardTitle>{t("members")}</CardTitle>
           <span className="card-subtitle ms-auto text-secondary small">
-            {org.member_count} active · {org.pending_invitations} invited
+            {t("counts", { active: formatNumber(org.member_count, undefined, t.locale), invited: formatNumber(org.pending_invitations, undefined, t.locale) })}
           </span>
         </CardHeader>
         <div className="table-responsive">
           <table className="table table-vcenter card-table">
             <thead>
               <tr>
-                <th>Member</th>
-                <th>Role</th>
-                <th>Status</th>
+                <th>{t("member")}</th>
+                <th>{t("role")}</th>
+                <th>{t("status")}</th>
               </tr>
             </thead>
             <tbody>
               {members.map((m) => (
                 <tr key={m.user_id}>
                   <td>
-                    {m.name ?? "Unknown user"} <span className="text-secondary">{m.email}</span>
+                    {m.name ?? t("unknownUser")} <span className="text-secondary">{m.email}</span>
                   </td>
-                  <td className="text-capitalize">{m.role}</td>
-                  <td className="text-capitalize">{m.status}</td>
+                  <td>{shown(roles, m.role)}</td>
+                  <td>{shown(roles, m.status)}</td>
                 </tr>
               ))}
               {members.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="text-secondary">Nobody - give it an owner below, or delete it.</td>
+                  <td colSpan={3} className="text-secondary">{t("nobody")}</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
         <CardBody className="border-top">
-          <label className="form-label" htmlFor="org-owner">Make someone the owner</label>
+          <label className="form-label" htmlFor="org-owner">{t("makeOwner")}</label>
           <div className="d-flex gap-2">
             <select id="org-owner" className="form-select" value={owner} onChange={(event) => setOwner(event.target.value)}>
-              <option value="">Pick a user…</option>
+              <option value="">{t("pickUser")}</option>
               {candidates.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name} ({u.email})
@@ -158,11 +167,11 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
               onClick={() =>
                 void run(
                   () => apiRequest(`/all-orgs/${orgId}/transfer-owner`, accessToken, { method: "POST", data: { user_id: owner } }),
-                  "Ownership transferred - previous owners are now admins.",
+                  t("transferDone"),
                 )
               }
             >
-              Transfer
+              {t("transfer")}
             </Button>
           </div>
         </CardBody>
@@ -170,26 +179,26 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
 
       <Card>
         <CardHeader>
-          <CardTitle>Limits</CardTitle>
+          <CardTitle>{t("limits")}</CardTitle>
         </CardHeader>
         <CardBody>
           <div className="row g-2">
             {LIMITS.map(({ key, label }) => (
               <div key={key} className="col-12 col-md-6">
-                <label className="form-label" htmlFor={`limit-${key}`}>{label}</label>
+                <label className="form-label" htmlFor={`limit-${key}`}>{t(label)}</label>
                 <input
                   id={`limit-${key}`}
                   type="number"
                   min={0}
                   className="form-control"
-                  placeholder="System setting"
+                  placeholder={t("systemSetting")}
                   value={limits[key] ?? ""}
                   onChange={(event) => setLimits((prev) => ({ ...prev, [key]: event.target.value }))}
                 />
               </div>
             ))}
           </div>
-          <small className="form-hint mt-2">Blank: the system-wide limit (System › Settings › Limits). 0: unlimited.</small>
+          <small className="form-hint mt-2">{t("limitsHint")}</small>
           <Button
             className="mt-3"
             variant="primary"
@@ -197,11 +206,11 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
             onClick={() =>
               void run(
                 () => apiRequest(`/all-orgs/${orgId}`, accessToken, { method: "PATCH", data: { limits: parsedLimits } }),
-                "Limits saved.",
+                t("limitsSaved"),
               )
             }
           >
-            Save limits
+            {t("saveLimits")}
           </Button>
         </CardBody>
       </Card>
@@ -211,13 +220,13 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
 
       <Card className="border-danger">
         <CardHeader>
-          <CardTitle>Delete organization</CardTitle>
+          <CardTitle>{t("deleteTitle")}</CardTitle>
         </CardHeader>
         <CardBody>
-          <p className="text-secondary">Deletes {org.name}, its memberships and invitations, and every goal and cycle filed under it.</p>
+          <p className="text-secondary">{t("deleteIntro", { name: org.name })}</p>
           <label className="form-check">
             <input className="form-check-input" type="checkbox" checked={confirm} onChange={(event) => setConfirm(event.target.checked)} />
-            <span className="form-check-label">I understand this can't be undone.</span>
+            <span className="form-check-label">{t("understand")}</span>
           </label>
           <Button
             variant="danger"
@@ -226,10 +235,10 @@ function AdminOrgPanel({ accessToken, orgId, onChanged, onDeleted }: AdminOrgPan
               void run(async () => {
                 await apiRequest(`/all-orgs/${orgId}`, accessToken, { method: "DELETE" });
                 onDeleted?.();
-              }, "Deleted.")
+              }, t("deleted"))
             }
           >
-            Delete {org.name}
+            {t("deleteOrg", { name: org.name })}
           </Button>
         </CardBody>
       </Card>

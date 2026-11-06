@@ -1,12 +1,14 @@
 import { useEffect } from "react";
-import { CrudListScreen, SegmentedControl, type LinkComponentProps } from "platform-core";
+import { CrudListScreen, localeFromMatches, SegmentedControl, translator, useT, type LinkComponentProps } from "platform-core";
 import { Link as RouterLink, useLocation, useOutletContext, useSearchParams } from "react-router";
 import TeamChartScreen from "../screens/TeamChartScreen";
+import messages from "./messages";
 import { joinPath, mountPrefix } from "./paths";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Teams" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("teams") }];
 }
 
 function CrudLink({ to, className, children, ...rest }: LinkComponentProps) {
@@ -35,6 +37,7 @@ function storedView(): View {
  * the last pick in this browser (else the chart).
  */
 export default function TeamsRoute() {
+  const t = useT(messages);
   const accessToken = useOutletContext<string>();
   const { pathname } = useLocation();
   const [params, setParams] = useSearchParams();
@@ -60,10 +63,10 @@ export default function TeamsRoute() {
     <>
       <div className="d-flex align-items-center mb-3">
         <SegmentedControl
-          label="Show teams as"
+          label={t("showTeamsAs")}
           options={[
-            { value: "chart", label: "Org chart" },
-            { value: "list", label: "List" },
+            { value: "chart", label: t("orgChart") },
+            { value: "list", label: t("list") },
           ]}
           value={view}
           onChange={pick}

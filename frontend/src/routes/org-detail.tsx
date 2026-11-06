@@ -2,10 +2,12 @@ import { CrudDetailScreen, useResourcePath, type LinkComponentProps } from "plat
 import { Link as RouterLink, useLocation, useNavigate, useOutletContext, useParams } from "react-router";
 import OrgMembersPanel from "../screens/OrgMembersPanel";
 import { joinPath, mountPrefix } from "./paths";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Organization" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("organization") }];
 }
 
 function CrudLink({ to, className, children, ...rest }: LinkComponentProps) {

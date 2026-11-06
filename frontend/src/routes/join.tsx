@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
+import { useT } from "platform-core";
 import { errorMessage, getPublicInvitation } from "../lib/api";
+import messages from "./messages";
 import { joinPath, mountPrefix } from "./paths";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Invitation" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("invitation") }];
 }
 
 /**
@@ -17,6 +21,7 @@ export function meta() {
  * where the host's gate asks them to log in first if needed.
  */
 export default function JoinRoute() {
+  const t = useT(messages);
   const { token = "" } = useParams();
   const navigate = useNavigate();
   const prefix = mountPrefix(useLocation().pathname, "invitations");
@@ -50,7 +55,7 @@ export default function JoinRoute() {
           {error}
         </div>
       ) : (
-        <div className="text-secondary">Opening invitation…</div>
+        <div className="text-secondary">{t("openingInvitation")}</div>
       )}
     </div>
   );

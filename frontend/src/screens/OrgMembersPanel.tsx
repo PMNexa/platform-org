@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState, type SubmitEvent } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle, FormControl, FormLabel, Modal } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, FormControl, FormLabel, Modal, formatDate, useLocale, useT } from "platform-core";
 import {
-  ROLE_LABELS,
   canManage,
   changeRole,
   createInvitation,
@@ -17,6 +16,8 @@ import {
   type OrgRole,
   type OrgSummary,
 } from "../lib/api";
+import messages from "./OrgMembersPanel.messages";
+import roleMessages from "./roles.messages";
 
 export interface OrgMembersPanelProps {
   accessToken: string;
@@ -27,11 +28,8 @@ export interface OrgMembersPanelProps {
   onLeft?: () => void;
 }
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString(undefined, { dateStyle: "medium" });
-}
-
-function CopyButton({ text, label = "Copy link" }: { text: string; label?: string }) {
+function CopyButton({ text, label }: { text: string; label?: string }) {
+  const t = useT(messages);
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;
@@ -40,7 +38,7 @@ function CopyButton({ text, label = "Copy link" }: { text: string; label?: strin
   }, [copied]);
   return (
     <Button variant="secondary" outline onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true))}>
-      {copied ? "Copied" : label}
+      {copied ? t("copied") : (label ?? t("copyLink"))}
     </Button>
   );
 }
@@ -64,6 +62,10 @@ function canRemove(mine: OrgRole | null, member: Member): boolean {
  * enforces all of it; this only hides what would fail.
  */
 function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembersPanelProps) {
+  const t = useT(messages);
+  const roleLabel = useT(roleMessages);
+  const locale = useLocale();
+  const day = (value: string) => formatDate(value, { dateStyle: "medium" }, locale);
   const [org, setOrg] = useState<OrgSummary | null>(null);
   const [members, setMembers] = useState<Member[] | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -106,13 +108,13 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
   }
 
   function handleRemove(member: Member) {
-    const who = member.name ?? member.email ?? "this member";
-    if (!window.confirm(`Remove ${who} from ${org?.name ?? "the organization"}? They lose access to its goals.`)) return;
+    const who = member.name ?? member.email ?? t("thisMember");
+    if (!window.confirm(t("confirmRemove", { who, org: org?.name ?? t("theOrg") }))) return;
     void act(() => removeMember(accessToken, member.id));
   }
 
   async function handleLeave(member: Member) {
-    if (!window.confirm(`Leave ${org?.name ?? "this organization"}? You lose access to its goals.`)) return;
+    if (!window.confirm(t("confirmLeave", { org: org?.name ?? t("thisOrg") }))) return;
     setError(null);
     try {
       await removeMember(accessToken, member.id);
@@ -123,7 +125,7 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
   }
 
   function handleRevoke(invitation: Invitation) {
-    if (!window.confirm(`Revoke the invitation for ${invitation.email}? Its link stops working.`)) return;
+    if (!window.confirm(t("confirmRevoke", { email: invitation.email }))) return;
     if (created?.id === invitation.id) setCreated(null);
     void act(() => revokeInvitation(accessToken, invitation.id));
   }
@@ -138,11 +140,11 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
 
       <Card className="mt-3">
         <CardHeader>
-          <CardTitle>Members{members ? ` (${members.length})` : ""}</CardTitle>
+          <CardTitle>{members ? t("membersCount", { n: members.length }) : t("members")}</CardTitle>
           {manager && (
             <div className="card-actions">
               <Button variant="primary" onClick={() => setInviting(true)}>
-                Invite member
+                {t("inviteMember")}
               </Button>
             </div>
           )}
@@ -151,10 +153,9 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
           <CardBody className="border-bottom">
             <div className="alert alert-success mb-0" role="status">
               <div className="flex-fill">
-                <h4 className="alert-title">Invitation for {created.email} created</h4>
+                <h4 className="alert-title">{t("invitationCreated", { email: created.email })}</h4>
                 <div className="text-secondary mb-2">
-                  Send them this link. They sign in (or sign up) with that email to join. It expires on{" "}
-                  {formatDate(created.expires_at)}.
+                  {t("sendLink", { date: day(created.expires_at) })}
                 </div>
                 <div className="d-flex gap-2 align-items-center">
                   <code className="flex-fill text-break p-2" style={{ userSelect: "all" }}>
@@ -167,15 +168,15 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
           </CardBody>
         )}
         {members === null ? (
-          <CardBody className="text-secondary">Loading…</CardBody>
+          <CardBody className="text-secondary">{t("loading")}</CardBody>
         ) : (
           <div className="table-responsive">
             <table className="table table-vcenter card-table">
               <thead>
                 <tr>
-                  <th>Member</th>
-                  <th>Role</th>
-                  <th>Joined</th>
+                  <th>{t("member")}</th>
+                  <th>{t("role")}</th>
+                  <th>{t("joined")}</th>
                   <th className="w-1" />
                 </tr>
               </thead>
@@ -187,7 +188,7 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
                       <td>
                         <div>
                           {member.name ?? member.email ?? member.user_id}
-                          {member.is_me && <span className="text-secondary"> (you)</span>}
+                          {member.is_me && <span className="text-secondary">{t("you")}</span>}
                         </div>
                         {member.name && member.email && <div className="text-secondary small">{member.email}</div>}
                       </td>
@@ -195,7 +196,7 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
                         {roles.length > 0 ? (
                           <select
                             className="form-select form-select-sm w-auto"
-                            aria-label={`Role of ${member.name ?? member.email ?? "member"}`}
+                            aria-label={t("roleOf", { who: member.name ?? member.email ?? t("memberFallback") })}
                             value={member.role}
                             onChange={(event) => {
                               const role = event.target.value as OrgRole;
@@ -204,24 +205,24 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
                           >
                             {roles.map((role) => (
                               <option key={role} value={role}>
-                                {ROLE_LABELS[role]}
+                                {roleLabel(role)}
                               </option>
                             ))}
                           </select>
                         ) : (
-                          ROLE_LABELS[member.role]
+                          roleLabel(member.role)
                         )}
                       </td>
-                      <td className="text-secondary">{formatDate(member.joined_at)}</td>
+                      <td className="text-secondary">{day(member.joined_at)}</td>
                       <td className="text-nowrap">
                         {member.is_me ? (
                           <Button variant="danger" outline onClick={() => void handleLeave(member)}>
-                            Leave
+                            {t("leave")}
                           </Button>
                         ) : (
                           canRemove(mine, member) && (
                             <Button variant="danger" outline onClick={() => handleRemove(member)}>
-                              Remove
+                              {t("remove")}
                             </Button>
                           )
                         )}
@@ -238,15 +239,15 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
       {manager && invitations.length > 0 && (
         <Card className="mt-3">
           <CardHeader>
-            <CardTitle>Pending invitations</CardTitle>
+            <CardTitle>{t("pendingInvitations")}</CardTitle>
           </CardHeader>
           <div className="table-responsive">
             <table className="table table-vcenter card-table">
               <thead>
                 <tr>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Expires</th>
+                  <th>{t("email")}</th>
+                  <th>{t("role")}</th>
+                  <th>{t("expires")}</th>
                   <th className="w-1" />
                 </tr>
               </thead>
@@ -256,15 +257,15 @@ function OrgMembersPanel({ accessToken, orgId, invitationUrl, onLeft }: OrgMembe
                   return (
                     <tr key={invitation.id}>
                       <td>{invitation.email}</td>
-                      <td>{ROLE_LABELS[invitation.role]}</td>
+                      <td>{roleLabel(invitation.role)}</td>
                       <td className={expired ? "text-danger" : "text-secondary"}>
-                        {expired ? "Expired" : formatDate(invitation.expires_at)}
+                        {expired ? t("expired") : day(invitation.expires_at)}
                       </td>
                       <td className="text-nowrap">
                         <div className="d-flex gap-2">
                           {!expired && <CopyButton text={invitationUrl(invitation.token)} />}
                           <Button variant="danger" outline onClick={() => handleRevoke(invitation)}>
-                            Revoke
+                            {t("revoke")}
                           </Button>
                         </div>
                       </td>
@@ -305,19 +306,20 @@ function InviteModal({
   onClose: () => void;
   onCreated: (invitation: Invitation) => void;
 }) {
+  const t = useT(messages);
   return (
     <Modal
       open={open}
       onClose={onClose}
       size="sm"
-      title="Invite a member"
+      title={t("inviteTitle")}
       footer={
         <>
           <Button variant="secondary" outline onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button type="submit" variant="primary" form="org-invite-form">
-            Create invitation
+            {t("createInvitation")}
           </Button>
         </>
       }
@@ -336,6 +338,7 @@ function InviteForm({
   orgId: string;
   onCreated: (invitation: Invitation) => void;
 }) {
+  const t = useT(messages);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InvitationRole>("member");
   const [error, setError] = useState<string | null>(null);
@@ -358,7 +361,7 @@ function InviteForm({
       <fieldset disabled={saving}>
         <div className="mb-3">
           <FormLabel htmlFor="org-invite-email" required>
-            Email
+            {t("email")}
           </FormLabel>
           <FormControl
             id="org-invite-email"
@@ -368,18 +371,18 @@ function InviteForm({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          <small className="form-hint">They join by signing in with this email.</small>
+          <small className="form-hint">{t("emailHint")}</small>
         </div>
         <div className="mb-3">
-          <FormLabel htmlFor="org-invite-role">Role</FormLabel>
+          <FormLabel htmlFor="org-invite-role">{t("role")}</FormLabel>
           <select
             id="org-invite-role"
             className="form-select form-select-sm"
             value={role}
             onChange={(event) => setRole(event.target.value as InvitationRole)}
           >
-            <option value="member">Member - works on the organization's goals</option>
-            <option value="admin">Admin - also manages members and invitations</option>
+            <option value="member">{t("memberOption")}</option>
+            <option value="admin">{t("adminOption")}</option>
           </select>
         </div>
         {error && (

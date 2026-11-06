@@ -1,10 +1,12 @@
 import { useLocation, useNavigate, useOutletContext, useParams } from "react-router";
 import AcceptInvitationScreen from "../screens/AcceptInvitationScreen";
 import { joinPath, mountPrefix } from "./paths";
+import { localeFromMatches, translator } from "platform-core";
+import titles from "./titles.messages";
 
 // oxlint-disable-next-line react/only-export-components
-export function meta() {
-  return [{ title: "Invitation" }];
+export function meta({ matches }: { matches?: readonly unknown[] }) {
+  return [{ title: translator(titles, localeFromMatches(matches))("invitation") }];
 }
 
 /**

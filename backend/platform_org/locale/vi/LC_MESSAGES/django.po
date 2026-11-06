@@ -1,0 +1,403 @@
+# platform_org: the API's user-visible texts. Written by `manage.py collect_ui_strings`;
+# fill in msgstr, then `msgfmt -o django.mo django.po`.
+msgid ""
+msgstr ""
+"Project-Id-Version: platform_org\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: platform-org/backend/platform_org/views/teams.py:175
+msgid "A name is needed."
+msgstr "Cần có tên."
+
+#: schema platform_org.Organization.slug
+msgid "A short name for web addresses. Made from the name for you."
+msgstr "Tên ngắn dùng trong địa chỉ web. Được tạo tự động từ tên."
+
+#: platform-org/backend/platform_org/views/teams.py:64
+msgid "A team can't be part of itself or of one of its own sub-teams."
+msgstr "Một nhóm không thể nằm trong chính nó hoặc trong một nhóm con của nó."
+
+#: schema platform_org.OrgInvitation.status
+msgid "Accepted"
+msgstr "Đã chấp nhận"
+
+#: insight orgs
+msgid "Accounts"
+msgstr "Tài khoản"
+
+#: schema platform_org.OrgMembership.status
+msgid "Active"
+msgstr "Đang hoạt động"
+
+#: schema platform_org.TeamMembership.placeholder_name
+msgid "Adds (or renames) a person with no account yet - instead of user_id."
+msgstr "Thêm (hoặc đổi tên) một người chưa có tài khoản - thay cho user_id."
+
+#: schema platform_org.OrgInvitation.role
+#: schema platform_org.OrgMembership.role
+#: schema platform_org.Organization.my_role
+msgid "Admin"
+msgstr "Quản trị viên"
+
+#: schema platform_org.AdminOrganization
+msgid "all organizations"
+msgstr "tất cả tổ chức"
+
+#: platform-org/backend/platform_org/views/teams.py:158
+msgid "Already in this team."
+msgstr "Đã ở trong nhóm này."
+
+#: platform-org/backend/platform_org/views/admin_orgs.py:46
+msgid "An object with any of: {keys}."
+msgstr "Một đối tượng chứa bất kỳ khóa nào trong: {keys}."
+
+#: schema platform_org.AdminOrganization.created_at
+msgid "Created at"
+msgstr "Tạo lúc"
+
+#: schema platform_org.OrgInvitation.status
+msgid "Declined"
+msgstr "Đã từ chối"
+
+#: platform-org/backend/platform_org/views/teams.py:108
+msgid "Either move or archive."
+msgstr "Chọn move hoặc archive."
+
+#: schema platform_org.OrgInvitation.email
+#: schema platform_org.OrgMembership.email
+#: schema platform_org.TeamMembership.email
+msgid "Email"
+msgstr "Email"
+
+#: schema platform_org.OrgInvitation.expires_at
+msgid "Expires at"
+msgstr "Hết hạn lúc"
+
+#: schema platform_org.AdminOrganization.id
+#: schema platform_org.OrgInvitation.id
+#: schema platform_org.OrgMembership.id
+msgid "Id"
+msgstr "ID"
+
+#: schema platform_org.OrgInvitation
+msgid "invitation"
+msgstr "lời mời"
+
+#: schema platform_org.OrgInvitation
+msgid "invitations"
+msgstr "lời mời"
+
+#: schema platform_org.OrgMembership.status
+msgid "Invited"
+msgstr "Đã mời"
+
+#: schema platform_org.OrgInvitation.invited_by
+msgid "Invited by"
+msgstr "Người mời"
+
+#: schema platform_org.OrgMembership.is_me
+#: schema platform_org.TeamMembership.is_me
+msgid "Is me"
+msgstr "Là tôi"
+
+#: schema platform_org.OrgMembership.joined_at
+msgid "Joined at"
+msgstr "Tham gia lúc"
+
+#: schema platform_org.TeamMembership.role
+msgid "Lead"
+msgstr "Trưởng nhóm"
+
+#: schema platform_org.TeamMembership.role
+msgid "Lead: sets the team's targets. Member: checks in."
+msgstr "Trưởng nhóm: đặt chỉ tiêu cho nhóm. Thành viên: check-in."
+
+#: schema platform_org.AdminOrganization.limits
+#: setting limits.max_members
+msgid "Limits"
+msgstr "Giới hạn"
+
+#: schema platform_org.OrgInvitation.role
+#: schema platform_org.OrgMembership.role
+#: schema platform_org.Organization.my_role
+msgid "Member"
+msgstr "Thành viên"
+
+#: schema platform_org.OrgMembership
+msgid "member"
+msgstr "thành viên"
+
+#: schema platform_org.AdminOrganization.member_count
+msgid "Member count"
+msgstr "Số thành viên"
+
+#: platform-org/backend/platform_org/views/invitations.py:86
+#: schema platform_org.OrgMembership
+msgid "members"
+msgstr "thành viên"
+
+#: setting limits.max_members
+msgid "Members per organization"
+msgstr "Số thành viên mỗi tổ chức"
+
+#: setting limits.max_members
+msgid "Members plus pending invitations. 0: unlimited. An organization's own limit (All organizations) wins."
+msgstr "Thành viên cộng lời mời đang chờ. 0: không giới hạn. Giới hạn riêng của tổ chức (Tất cả tổ chức) được ưu tiên."
+
+#: platform-org/backend/platform_org/accounts.py:68
+msgid "Memberships"
+msgstr "Tư cách thành viên"
+
+#: schema platform_org.Organization.my_role
+msgid "My role"
+msgstr "Vai trò của tôi"
+
+#: schema platform_org.AdminOrganization.name
+#: schema platform_org.OrgMembership.name
+#: schema platform_org.Organization.name
+msgid "Name"
+msgstr "Tên"
+
+#: platform-org/backend/platform_org/accounts.py:69
+msgid "New organizations, last 30 days"
+msgstr "Tổ chức mới, 30 ngày qua"
+
+#: platform-org/backend/platform_org/serializers/organization.py:44
+msgid "Not a time zone - use a name like Asia/Ho_Chi_Minh."
+msgstr "Không phải múi giờ - hãy dùng tên như Asia/Ho_Chi_Minh."
+
+#: platform-org/backend/platform_org/views/teams.py:156
+msgid "Only a member of the organization can join one of its teams."
+msgstr "Chỉ thành viên của tổ chức mới có thể tham gia một nhóm của tổ chức đó."
+
+#: platform-org/backend/platform_org/placeholders.py:35
+#: platform-org/backend/platform_org/views/teams.py:207
+msgid "Only a member of the organization."
+msgstr "Chỉ thành viên của tổ chức."
+
+#: platform-org/backend/platform_org/views/teams.py:172
+msgid "Only a placeholder's name can be changed here."
+msgstr "Ở đây chỉ có thể đổi tên của người chưa có tài khoản."
+
+#: platform-org/backend/platform_org/views/members.py:51
+msgid "Only an owner can change who is an owner."
+msgstr "Chỉ chủ sở hữu mới có thể thay đổi ai là chủ sở hữu."
+
+#: platform-org/backend/platform_org/views/organizations.py:87
+msgid "Only an owner can delete this organization."
+msgstr "Chỉ chủ sở hữu mới có thể xóa tổ chức này."
+
+#: platform-org/backend/platform_org/views/members.py:63
+msgid "Only an owner can remove an owner."
+msgstr "Chỉ chủ sở hữu mới có thể xóa một chủ sở hữu."
+
+#: platform-org/backend/platform_org/views/members.py:49
+msgid "Only an owner or admin can change members' roles."
+msgstr "Chỉ chủ sở hữu hoặc quản trị viên mới có thể thay đổi vai trò của thành viên."
+
+#: platform-org/backend/platform_org/views/organizations.py:82
+msgid "Only an owner or admin can change this organization."
+msgstr "Chỉ chủ sở hữu hoặc quản trị viên mới có thể thay đổi tổ chức này."
+
+#: platform-org/backend/platform_org/views/invitations.py:68
+msgid "Only an owner or admin can invite members."
+msgstr "Chỉ chủ sở hữu hoặc quản trị viên mới có thể mời thành viên."
+
+#: platform-org/backend/platform_org/views/members.py:61
+msgid "Only an owner or admin can remove members."
+msgstr "Chỉ chủ sở hữu hoặc quản trị viên mới có thể xóa thành viên."
+
+#: schema platform_org.Team.position
+msgid "Order among teams with the same parent, lowest first."
+msgstr "Thứ tự giữa các nhóm cùng mục cha, số nhỏ nhất trước."
+
+#: schema platform_org.OrgInvitation.org
+#: schema platform_org.OrgMembership.org
+#: schema platform_org.Team.org
+msgid "Org"
+msgstr "Tổ chức"
+
+#: schema platform_org.AdminOrganization
+#: schema platform_org.Organization
+msgid "organization"
+msgstr "tổ chức"
+
+#: insight orgs
+#: platform-org/backend/platform_org/accounts.py:67
+#: usage provider
+msgid "Organizations"
+msgstr "Tổ chức"
+
+#: schema platform_org.Organization
+msgid "organizations"
+msgstr "tổ chức"
+
+#: platform-org/backend/platform_org/views/admin_orgs.py:78
+msgid "Organizations are created by their members."
+msgstr "Tổ chức do chính các thành viên của nó tạo."
+
+#: schema platform_org.OrgMembership.role
+#: schema platform_org.Organization.my_role
+msgid "Owner"
+msgstr "Chủ sở hữu"
+
+#: schema platform_org.Team.parent
+msgid "Parent"
+msgstr "Mục cha"
+
+#: schema platform_org.OrgInvitation.status
+msgid "Pending"
+msgstr "Đang chờ"
+
+#: platform-org/backend/platform_org/accounts.py:71
+#: schema platform_org.AdminOrganization.pending_invitations
+msgid "Pending invitations"
+msgstr "Lời mời đang chờ"
+
+#: platform-org/backend/platform_org/views/teams.py:153
+msgid "Pick a person, or give the name of someone with no account yet."
+msgstr "Hãy chọn một người, hoặc nhập tên của một người chưa có tài khoản."
+
+#: platform-org/backend/platform_org/views/admin_orgs.py:118
+msgid "Pick an existing user."
+msgstr "Hãy chọn một người dùng hiện có."
+
+#: schema platform_org.TeamMembership.placeholder
+msgid "Placeholder"
+msgstr "Người chưa có tài khoản"
+
+#: schema platform_org.TeamMembership.placeholder_email
+msgid "Placeholder email"
+msgstr "Email người chưa có tài khoản"
+
+#: schema platform_org.TeamMembership.placeholder_name
+msgid "Placeholder name"
+msgstr "Tên người chưa có tài khoản"
+
+#: schema platform_org.Team.position
+msgid "Position"
+msgstr "Vị trí"
+
+#: platform-org/backend/platform_org/views/teams.py:166
+msgid "Remove the membership and add the other person instead."
+msgstr "Hãy xóa tư cách thành viên này rồi thêm người kia."
+
+#: schema platform_org.OrgInvitation.responded_at
+msgid "Responded at"
+msgstr "Phản hồi lúc"
+
+#: schema platform_org.OrgInvitation.role
+#: schema platform_org.OrgMembership.role
+#: schema platform_org.TeamMembership.role
+msgid "Role"
+msgstr "Vai trò"
+
+#: schema platform_org.AdminOrganization.slug
+#: schema platform_org.Organization.slug
+msgid "Slug"
+msgstr "Slug"
+
+#: schema platform_org.TeamMembership.placeholder
+msgid "Someone with no account yet. The team's lead checks in for them; link them to an account later."
+msgstr "Người chưa có tài khoản. Trưởng nhóm check-in thay cho họ; liên kết họ với một tài khoản sau."
+
+#: schema platform_org.OrgInvitation.status
+#: schema platform_org.OrgMembership.status
+msgid "Status"
+msgstr "Trạng thái"
+
+#: schema platform_org.Team.sub_teams
+msgid "Sub teams"
+msgstr "Nhóm con"
+
+#: schema platform_org.OrgMembership.status
+msgid "Suspended"
+msgstr "Bị tạm ngưng"
+
+#: schema platform_org.TeamMembership.team
+msgid "Team"
+msgstr "Nhóm"
+
+#: schema platform_org.Team
+msgid "team"
+msgstr "nhóm"
+
+#: schema platform_org.TeamMembership
+msgid "team member"
+msgstr "thành viên nhóm"
+
+#: schema platform_org.TeamMembership
+msgid "team members"
+msgstr "thành viên nhóm"
+
+#: schema platform_org.Organization.teams
+msgid "Teams"
+msgstr "Nhóm"
+
+#: schema platform_org.Team
+msgid "teams"
+msgstr "nhóm"
+
+#: schema platform_org.Organization.name
+msgid "The name of your team or company. Its members share the organization's goals."
+msgstr "Tên nhóm hoặc công ty của bạn. Các thành viên cùng chia sẻ mục tiêu của tổ chức."
+
+#: schema platform_org.TeamMembership.user_id
+msgid "The person - a member of the team's organization, or one of its placeholders."
+msgstr "Người - một thành viên của tổ chức của nhóm, hoặc một người chưa có tài khoản của tổ chức đó."
+
+#: schema platform_org.TeamMembership.placeholder_email
+msgid "The placeholder's email, if known: accepting an invitation sent to it links them to that account."
+msgstr "Email của người chưa có tài khoản, nếu biết: chấp nhận lời mời gửi tới email này sẽ liên kết họ với tài khoản đó."
+
+#: schema platform_org.Team.name
+msgid "The team or department's name. For example: Sales, or Sales North."
+msgstr "Tên nhóm hoặc phòng ban. Ví dụ: Kinh doanh, hoặc Kinh doanh miền Bắc."
+
+#: platform-org/backend/platform_org/views/invitations.py:74
+msgid "This email already has a pending invitation."
+msgstr "Email này đã có một lời mời đang chờ."
+
+#: platform-org/backend/platform_org/views/invitations.py:65
+#: platform-org/backend/platform_org/views/teams.py:140
+#: platform-org/backend/platform_org/views/teams.py:75
+msgid "This field is required."
+msgstr "Trường này là bắt buộc."
+
+#: platform-org/backend/platform_org/views/invitations.py:148
+msgid "This invitation is no longer valid."
+msgstr "Lời mời này không còn hiệu lực."
+
+#: platform-org/backend/platform_org/views/invitations.py:145
+msgid "This invitation was sent to {email}. Sign in with that email to respond to it."
+msgstr "Lời mời này đã được gửi tới {email}. Hãy đăng nhập bằng email đó để phản hồi."
+
+#: platform-org/backend/platform_org/views/teams.py:202
+msgid "This person already has an account."
+msgstr "Người này đã có tài khoản."
+
+#: platform-org/backend/platform_org/serializers/organization.py:31
+#: schema platform_org.Organization.timezone
+msgid "Time zone"
+msgstr "Múi giờ"
+
+#: schema platform_org.OrgInvitation.token
+msgid "Token"
+msgstr "Token"
+
+#: schema platform_org.OrgMembership.user_id
+#: schema platform_org.TeamMembership.user_id
+msgid "User id"
+msgstr "ID người dùng"
+
+#: schema platform_org.Organization.timezone
+msgid "Where the organization's day starts, e.g. Asia/Ho_Chi_Minh or Europe/Berlin - daily and weekly targets count in it. Empty = UTC."
+msgstr "Nơi bắt đầu ngày của tổ chức, ví dụ Asia/Ho_Chi_Minh hoặc Europe/Berlin - chỉ tiêu theo ngày và tuần được tính theo múi giờ này. Để trống = UTC."
+
+#: platform-org/backend/platform_org/views/admin_orgs.py:49
+msgid "{key}: a whole number, 0 for unlimited."
+msgstr "{key}: một số nguyên, 0 là không giới hạn."

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type SubmitEvent } from "react";
-import { Avatar, Button, Card, CardBody, DefaultLink, FormControl, FormLabel, FormSelect, Icon, Modal, type LinkComponent } from "platform-core";
+import { Avatar, Button, Card, CardBody, DefaultLink, FormControl, FormLabel, formatNumber, FormSelect, Icon, Modal, useT, type LinkComponent } from "platform-core";
 import {
-  TEAM_ROLE_LABELS,
   addTeamMember,
   canManage,
   changeTeamRole,
@@ -23,6 +22,8 @@ import {
   type TeamRole,
   type TeamWithPosition,
 } from "../lib/api";
+import roleMessages from "./roles.messages";
+import messages from "./TeamChartScreen.messages";
 
 export interface TeamChartScreenProps {
   accessToken: string;
@@ -120,6 +121,8 @@ function descendants(children: Map<string | null, TeamWithPosition[]>, id: strin
  * fail.
  */
 function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = DefaultLink, invitationUrl }: TeamChartScreenProps) {
+  const t = useT(messages);
+  const roleT = useT(roleMessages);
   const [orgs, setOrgs] = useState<OrgSummary[] | null>(null);
   const [orgId, setOrgId] = useState(readStoredOrg);
   const [teams, setTeams] = useState<TeamWithPosition[]>([]);
@@ -143,7 +146,7 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
   const refresh = useCallback(async () => {
     if (!org) return;
     const [teamRows, orgPeople] = await Promise.all([listOrgTeams(accessToken, org.id), listMembers(accessToken, org.id)]);
-    const rows = await listMembershipsOf(accessToken, teamRows.map((t) => t.id));
+    const rows = await listMembershipsOf(accessToken, teamRows.map((row) => row.id));
     setTeams(teamRows);
     setPeople(orgPeople);
     setMemberships(rows);
@@ -180,7 +183,7 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
   }
 
   const children = useMemo(() => {
-    const ids = new Set(teams.map((t) => t.id));
+    const ids = new Set(teams.map((row) => row.id));
     const map = new Map<string | null, TeamWithPosition[]>();
     for (const team of teams) {
       // A parent outside the list (shouldn't happen) puts the team on top.
@@ -231,15 +234,15 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
             </div>
             {manager && (
               <div className="po-node-actions">
-                <button type="button" className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`Add a sub-team to ${team.name}`} title="Add sub-team"
+                <button type="button" className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={t("addSubTeamLabel", { name: team.name })} title={t("addSubTeam")}
                   onClick={() => setDialog({ kind: "team", team: null, parent: team.id })}>
                   <Icon name="plus" />
                 </button>
-                <button type="button" className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`Edit ${team.name}`} title="Rename or move"
+                <button type="button" className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={t("editLabel", { name: team.name })} title={t("renameOrMove")}
                   onClick={() => setDialog({ kind: "team", team, parent: team.parent })}>
                   <Icon name="pencil" />
                 </button>
-                <button type="button" className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`Delete ${team.name}`} title="Delete"
+                <button type="button" className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={t("deleteLabel", { name: team.name })} title={t("delete")}
                   onClick={() => setDialog({ kind: "delete", team })}>
                   <Icon name="trash" />
                 </button>
@@ -251,34 +254,34 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
               {rows.map((m) => (
                 <li key={m.id} className={m.placeholder ? "po-placeholder" : undefined}>
                   <Avatar name={personName(m)} />
-                  <span className="po-person" title={m.placeholder ? "No account yet - the team's lead checks in for them" : (m.email ?? undefined)}>
+                  <span className="po-person" title={m.placeholder ? t("placeholderTitle") : (m.email ?? undefined)}>
                     {personName(m)}
-                    {m.is_me && <span className="po-muted"> (you)</span>}
+                    {m.is_me && <span className="po-muted">{t("you")}</span>}
                   </span>
                   {/* An icon, not a "No account" badge: the card is narrow, and a
                       text badge next to the role left no room for the name.
                       The italic, muted name is the cue; the tooltip says it. */}
                   {m.placeholder && manager && (
-                    <button type="button" className="po-icon-btn" disabled={busy} title="No account - rename, invite or link to an account"
-                      aria-label={`${personName(m)} has no account - rename, invite or link to an account`}
+                    <button type="button" className="po-icon-btn" disabled={busy} title={t("noAccountTitle")}
+                      aria-label={t("noAccountLabel", { name: personName(m) })}
                       onClick={() => setDialog({ kind: "person", membership: m })}>
                       <Icon name="link" />
                     </button>
                   )}
                   {manager ? (
                     <button type="button" className={`po-role${m.role === "lead" ? " po-lead" : ""}`} disabled={busy}
-                      title={m.role === "lead" ? "Make a member" : "Make lead"}
-                      aria-label={`${personName(m)} is ${TEAM_ROLE_LABELS[m.role]} - make ${m.role === "lead" ? "a member" : "lead"}`}
+                      title={m.role === "lead" ? t("makeMember") : t("makeLead")}
+                      aria-label={t(m.role === "lead" ? "roleLabelLead" : "roleLabelMember", { name: personName(m), role: roleT(m.role) })}
                       onClick={() => void run(() => changeTeamRole(accessToken, m.id, m.role === "lead" ? "member" : "lead"))}>
-                      {TEAM_ROLE_LABELS[m.role]}
+                      {roleT(m.role)}
                     </button>
                   ) : (
-                    m.role === "lead" && <span className="po-role po-lead">Lead</span>
+                    m.role === "lead" && <span className="po-role po-lead">{roleT("lead")}</span>
                   )}
                   {(manager || m.is_me) && (
                     <button type="button" className="po-remove" disabled={busy}
-                      aria-label={m.is_me ? `Leave ${team.name}` : `Remove ${personName(m)} from ${team.name}`}
-                      title={m.is_me ? "Leave" : "Remove"}
+                      aria-label={m.is_me ? t("leaveLabel", { team: team.name }) : t("removeLabel", { name: personName(m), team: team.name })}
+                      title={m.is_me ? t("leave") : t("remove")}
                       onClick={() => void run(() => removeTeamMember(accessToken, m.id))}>
                       <Icon name="x" />
                     </button>
@@ -288,15 +291,15 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
             </ul>
           )}
           <div className="po-node-foot">
-            {rows.length === 0 && !manager && <span className="po-muted">Nobody yet</span>}
+            {rows.length === 0 && !manager && <span className="po-muted">{t("nobodyYet")}</span>}
             {manager && (
               <button type="button" className="po-link" onClick={() => setDialog({ kind: "member", team })}>
-                + Add member
+                {t("addMember")}
               </button>
             )}
             {kids.length > 0 && (
               <button type="button" className="po-link ms-auto" aria-expanded={!closed} onClick={() => toggle(team.id)}>
-                {closed ? `Show ${kids.length} team${kids.length === 1 ? "" : "s"}` : "Hide teams"}
+                {closed ? t("showTeams", { n: kids.length }) : t("hideTeams")}
               </button>
             )}
           </div>
@@ -314,7 +317,7 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
       <CardBody>
         <div className="d-flex align-items-center gap-2 mb-3 flex-wrap">
           {orgs && orgs.length > 1 && (
-            <FormSelect aria-label="Organization" value={org?.id ?? ""} onChange={(e) => pickOrg(e.target.value)} style={{ maxWidth: 280 }}>
+            <FormSelect aria-label={t("organization")} value={org?.id ?? ""} onChange={(e) => pickOrg(e.target.value)} style={{ maxWidth: 280 }}>
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>{o.name}</option>
               ))}
@@ -322,15 +325,15 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
           )}
           {manager && (
             <Button variant="primary" size="sm" className="ms-auto" onClick={() => setDialog({ kind: "team", team: null, parent: null })}>
-              <Icon name="plus" /> New team
+              <Icon name="plus" /> {t("newTeam")}
             </Button>
           )}
         </div>
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
         {orgs === null || (org && !loaded) ? (
-          <div className="text-secondary">Loading…</div>
+          <div className="text-secondary">{t("loading")}</div>
         ) : !org ? (
-          <p className="text-secondary mb-0">You're not in an organization yet - teams live inside one.</p>
+          <p className="text-secondary mb-0">{t("noOrg")}</p>
         ) : (
           <div className="po-chart">
             <ul className="po-tree">
@@ -341,13 +344,13 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
                   </div>
                   <div className="po-node-foot">
                     <span className="po-muted">
-                      {people.length} member{people.length === 1 ? "" : "s"}
-                      {unassigned.length > 0 && ` · ${unassigned.length} not in a team`}
+                      {t("memberCount", { n: formatNumber(people.length, undefined, t.locale), count: people.length })}
+                      {unassigned.length > 0 && t("notInTeam", { n: formatNumber(unassigned.length, undefined, t.locale) })}
                     </span>
                   </div>
                   {top.length === 0 && (
                     <div className="po-node-foot">
-                      <span className="po-muted">No teams yet.</span>
+                      <span className="po-muted">{t("noTeams")}</span>
                     </div>
                   )}
                 </div>
@@ -449,6 +452,7 @@ function TeamDialog({
   onClose: () => void;
   onSave: (name: string, parent: string | null) => void;
 }) {
+  const t = useT(messages);
   const [name, setName] = useState(team?.name ?? "");
   const [parentId, setParentId] = useState(parent ?? "");
   function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -460,30 +464,30 @@ function TeamDialog({
       open
       onClose={onClose}
       size="sm"
-      title={team ? `Edit ${team.name}` : "New team"}
+      title={team ? t("editTitle", { name: team.name }) : t("newTeam")}
       footer={
         <>
-          <Button variant="secondary" outline onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" outline onClick={onClose}>{t("cancel")}</Button>
           <Button type="submit" variant="primary" form="po-team-form" disabled={busy || !name.trim()}>
-            {team ? "Save" : "Create"}
+            {team ? t("save") : t("create")}
           </Button>
         </>
       }
     >
       <form id="po-team-form" onSubmit={submit}>
         <div className="mb-3">
-          <FormLabel htmlFor="po-team-name" required>Name</FormLabel>
-          <FormControl id="po-team-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Sales North" />
+          <FormLabel htmlFor="po-team-name" required>{t("name")}</FormLabel>
+          <FormControl id="po-team-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t("teamNamePlaceholder")} />
         </div>
         <div>
-          <FormLabel htmlFor="po-team-parent">Part of</FormLabel>
+          <FormLabel htmlFor="po-team-parent">{t("partOf")}</FormLabel>
           <FormSelect id="po-team-parent" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-            <option value="">The organization (top level)</option>
+            <option value="">{t("topLevel")}</option>
             {teams
-              .filter((t) => !exclude.has(t.id))
+              .filter((row) => !exclude.has(row.id))
               .sort((a, b) => a.name.localeCompare(b.name))
-              .map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              .map((row) => (
+                <option key={row.id} value={row.id}>{row.name}</option>
               ))}
           </FormSelect>
         </div>
@@ -505,28 +509,29 @@ function DeleteDialog({
   onClose: () => void;
   onDelete: (instances: "move" | "archive") => void;
 }) {
+  const t = useT(messages);
   const [instances, setInstances] = useState<"move" | "archive">("move");
   return (
     <Modal
       open
       onClose={onClose}
       size="sm"
-      title={`Delete ${team.name}?`}
+      title={t("deleteTitle", { name: team.name })}
       footer={
         <>
-          <Button variant="secondary" outline onClick={onClose}>Cancel</Button>
-          <Button variant="danger" disabled={busy} onClick={() => onDelete(instances)}>Delete team</Button>
+          <Button variant="secondary" outline onClick={onClose}>{t("cancel")}</Button>
+          <Button variant="danger" disabled={busy} onClick={() => onDelete(instances)}>{t("deleteTeam")}</Button>
         </>
       }
     >
       <p>
-        Its members leave the team.
-        {hasChildren && " Its sub-teams move up one level."}
+        {t("membersLeave")}
+        {hasChildren && t("subTeamsMoveUp")}
       </p>
-      <FormLabel htmlFor="po-team-instances">The team's goals</FormLabel>
+      <FormLabel htmlFor="po-team-instances">{t("teamGoals")}</FormLabel>
       <FormSelect id="po-team-instances" value={instances} onChange={(e) => setInstances(e.target.value as "move" | "archive")}>
-        <option value="move">{team.parent ? "Move to the team above" : "Move to the organization"}</option>
-        <option value="archive">Archive</option>
+        <option value="move">{team.parent ? t("moveUp") : t("moveToOrg")}</option>
+        <option value="archive">{t("archive")}</option>
       </FormSelect>
     </Modal>
   );
@@ -551,6 +556,7 @@ function MemberDialog({
   onClose: () => void;
   onAdd: (person: NewPerson, role: TeamRole) => void;
 }) {
+  const t = useT(messages);
   const [pick, setPick] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -567,21 +573,21 @@ function MemberDialog({
       open
       onClose={onClose}
       size="sm"
-      title={`Add to ${team.name}`}
+      title={t("addToTitle", { name: team.name })}
       footer={
         <>
-          <Button variant="secondary" outline onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" form="po-member-form" disabled={busy || !ready}>Add</Button>
+          <Button variant="secondary" outline onClick={onClose}>{t("cancel")}</Button>
+          <Button type="submit" variant="primary" form="po-member-form" disabled={busy || !ready}>{t("add")}</Button>
         </>
       }
     >
       <form id="po-member-form" onSubmit={submit}>
         <div className="mb-3">
-          <FormLabel htmlFor="po-member-pick" required>Person</FormLabel>
+          <FormLabel htmlFor="po-member-pick" required>{t("person")}</FormLabel>
           <FormSelect id="po-member-pick" autoFocus value={pick} onChange={(e) => setPick(e.target.value)}>
-            <option value="">Pick a person…</option>
+            <option value="">{t("pickPerson")}</option>
             {candidates.length > 0 && (
-              <optgroup label="Members of the organization">
+              <optgroup label={t("orgMembers")}>
                 {candidates.map((m) => (
                   <option key={m.user_id} value={m.user_id}>
                     {m.name ?? m.email}
@@ -591,37 +597,34 @@ function MemberDialog({
               </optgroup>
             )}
             {placeholders.length > 0 && (
-              <optgroup label="No account yet">
+              <optgroup label={t("noAccountYet")}>
                 {placeholders.map((m) => (
                   <option key={m.user_id} value={m.user_id}>{personName(m)}</option>
                 ))}
               </optgroup>
             )}
-            <option value={NEW_PERSON}>+ Someone without an account…</option>
+            <option value={NEW_PERSON}>{t("someoneNew")}</option>
           </FormSelect>
-          {!isNew && <small className="form-hint">Not listed? Invite them to the organization, or add them without an account.</small>}
+          {!isNew && <small className="form-hint">{t("notListed")}</small>}
         </div>
         {isNew && (
           <>
             <div className="mb-3">
-              <FormLabel htmlFor="po-member-name" required>Name</FormLabel>
-              <FormControl id="po-member-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Hana Tran" />
+              <FormLabel htmlFor="po-member-name" required>{t("name")}</FormLabel>
+              <FormControl id="po-member-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t("personNamePlaceholder")} />
             </div>
             <div className="mb-3">
-              <FormLabel htmlFor="po-member-email">Email</FormLabel>
-              <FormControl id="po-member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" />
-              <small className="form-hint">
-                They take part like anyone else, and the team's lead checks in for them. Link them to an account
-                later - or, with an email, they're linked when they accept an invitation sent to it.
-              </small>
+              <FormLabel htmlFor="po-member-email">{t("email")}</FormLabel>
+              <FormControl id="po-member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("optional")} />
+              <small className="form-hint">{t("newPersonHint")}</small>
             </div>
           </>
         )}
         <div>
-          <FormLabel htmlFor="po-member-role">Role</FormLabel>
+          <FormLabel htmlFor="po-member-role">{t("role")}</FormLabel>
           <FormSelect id="po-member-role" value={role} onChange={(e) => setRole(e.target.value as TeamRole)}>
-            <option value="member">Member - checks in</option>
-            <option value="lead">Lead - also sets the team's targets</option>
+            <option value="member">{t("memberRole")}</option>
+            <option value="lead">{t("leadRole")}</option>
           </FormSelect>
         </div>
       </form>
@@ -651,24 +654,22 @@ function PersonDialog({
   onLink: (userId: string) => void;
   onInvite: (email: string) => Promise<string | null>;
 }) {
+  const t = useT(messages);
   const [name, setName] = useState(membership.name ?? "");
   const [email, setEmail] = useState(membership.email ?? "");
   const [account, setAccount] = useState("");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const who = membership.name ?? "this person";
+  const who = membership.name ?? t("thisPerson");
   return (
     <Modal
       open
       onClose={onClose}
-      title={membership.name ?? "No account yet"}
-      footer={<Button variant="secondary" outline onClick={onClose}>Close</Button>}
+      title={membership.name ?? t("noAccountYet")}
+      footer={<Button variant="secondary" outline onClick={onClose}>{t("close")}</Button>}
     >
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
-      <p className="text-secondary">
-        {who} has no account yet: the team's lead checks in for them. Once they have one, link it - their team
-        places and goals, with every check-in, become theirs.
-      </p>
+      <p className="text-secondary">{t("personIntro", { who })}</p>
       <form
         className="mb-4"
         onSubmit={(e) => {
@@ -678,19 +679,19 @@ function PersonDialog({
       >
         <div className="row g-2 align-items-end">
           <div className="col-sm-5">
-            <FormLabel htmlFor="po-person-name" required>Name</FormLabel>
+            <FormLabel htmlFor="po-person-name" required>{t("name")}</FormLabel>
             <FormControl id="po-person-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="col-sm-5">
-            <FormLabel htmlFor="po-person-email">Email</FormLabel>
-            <FormControl id="po-person-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" />
+            <FormLabel htmlFor="po-person-email">{t("email")}</FormLabel>
+            <FormControl id="po-person-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("optional")} />
           </div>
           <div className="col-sm-2">
-            <Button type="submit" variant="secondary" outline disabled={busy || !name.trim()}>Save</Button>
+            <Button type="submit" variant="secondary" outline disabled={busy || !name.trim()}>{t("save")}</Button>
           </div>
         </div>
       </form>
-      <h4>Link to an account</h4>
+      <h4>{t("linkHeading")}</h4>
       <form
         className="row g-2 align-items-end mb-4"
         onSubmit={(e) => {
@@ -699,9 +700,9 @@ function PersonDialog({
         }}
       >
         <div className="col-sm-9">
-          <FormLabel htmlFor="po-person-account">A member of the organization</FormLabel>
+          <FormLabel htmlFor="po-person-account">{t("orgMember")}</FormLabel>
           <FormSelect id="po-person-account" value={account} onChange={(e) => setAccount(e.target.value)}>
-            <option value="">Pick who {who} is…</option>
+            <option value="">{t("pickWho", { who })}</option>
             {members.map((m) => (
               <option key={m.user_id} value={m.user_id}>
                 {m.name ?? m.email}
@@ -711,12 +712,12 @@ function PersonDialog({
           </FormSelect>
         </div>
         <div className="col-sm-3">
-          <Button type="submit" variant="primary" disabled={busy || !account}>Link</Button>
+          <Button type="submit" variant="primary" disabled={busy || !account}>{t("link")}</Button>
         </div>
       </form>
       {canInvite && (
         <>
-          <h4>Not a member yet? Invite them</h4>
+          <h4>{t("inviteHeading")}</h4>
           <form
             className="row g-2 align-items-end"
             onSubmit={(e) => {
@@ -729,22 +730,20 @@ function PersonDialog({
             }}
           >
             <div className="col-sm-9">
-              <FormLabel htmlFor="po-person-invite">Their email</FormLabel>
+              <FormLabel htmlFor="po-person-invite">{t("theirEmail")}</FormLabel>
               <FormControl id="po-person-invite" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="col-sm-3">
-              <Button type="submit" variant="secondary" outline disabled={busy || !email.trim()}>Invite</Button>
+              <Button type="submit" variant="secondary" outline disabled={busy || !email.trim()}>{t("invite")}</Button>
             </div>
           </form>
           {inviteLink && (
             <div className="mt-2">
-              <small className="form-hint">
-                Send them this link - no email is sent. When they accept it, {who} becomes their account.
-              </small>
+              <small className="form-hint">{t("inviteHint", { who })}</small>
               <div className="input-group mt-1">
-                <input className="form-control" readOnly value={inviteLink} aria-label="Invitation link" />
+                <input className="form-control" readOnly value={inviteLink} aria-label={t("invitationLink")} />
                 <Button variant="secondary" outline onClick={() => void navigator.clipboard.writeText(inviteLink).then(() => setCopied(true))}>
-                  {copied ? "Copied" : "Copy"}
+                  {copied ? t("copied") : t("copy")}
                 </Button>
               </div>
             </div>

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Button, Card, CardBody } from "platform-core";
+import { Button, Card, CardBody, useT } from "platform-core";
 import {
-  ROLE_LABELS,
   acceptInvitation,
   declineInvitation,
   errorMessage,
   getInvitation,
   type ReceivedInvitation,
 } from "../lib/api";
+import messages from "./AcceptInvitationScreen.messages";
+import roleMessages from "./roles.messages";
 
 export interface AcceptInvitationScreenProps {
   accessToken: string;
@@ -26,6 +27,8 @@ export interface AcceptInvitationScreenProps {
  * expired).
  */
 function AcceptInvitationScreen({ accessToken, token, onAccepted, onDeclined }: AcceptInvitationScreenProps) {
+  const t = useT(messages);
+  const roles = useT(roleMessages);
   const [invitation, setInvitation] = useState<ReceivedInvitation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -59,21 +62,20 @@ function AcceptInvitationScreen({ accessToken, token, onAccepted, onDeclined }: 
     }
   }
 
-  const inviter = invitation?.invited_by.name ?? invitation?.invited_by.email ?? "Someone";
+  const inviter = invitation?.invited_by.name ?? invitation?.invited_by.email ?? t("someone");
   let blocker: string | null = null;
   if (invitation) {
-    if (invitation.status === "accepted") blocker = "This invitation has already been accepted.";
-    else if (invitation.status === "declined") blocker = "This invitation was declined.";
-    else if (invitation.expired) blocker = "This invitation has expired. Ask for a new one.";
-    else if (!invitation.for_me)
-      blocker = `This invitation was sent to ${invitation.email}. Sign in with that email to accept it.`;
+    if (invitation.status === "accepted") blocker = t("accepted");
+    else if (invitation.status === "declined") blocker = t("declined");
+    else if (invitation.expired) blocker = t("expired");
+    else if (!invitation.for_me) blocker = t("notForMe", { email: invitation.email });
   }
 
   return (
     <div className="container-tight py-4">
       <Card>
         <CardBody className="text-center py-4">
-          {!invitation && !error && <div className="text-secondary">Loading…</div>}
+          {!invitation && !error && <div className="text-secondary">{t("loading")}</div>}
           {!invitation && error && (
             <div className="text-danger" role="alert">
               {error}
@@ -81,16 +83,15 @@ function AcceptInvitationScreen({ accessToken, token, onAccepted, onDeclined }: 
           )}
           {invitation && (
             <>
-              <h2 className="mb-2">Join {invitation.org.name}</h2>
+              <h2 className="mb-2">{t("join", { org: invitation.org.name })}</h2>
               <p className="text-secondary">
-                {inviter} invited you to join <strong>{invitation.org.name}</strong> as{" "}
-                {ROLE_LABELS[invitation.role].toLowerCase()}. Members see and work on the organization's goals.
+                {t("invitedYou", { inviter, org: invitation.org.name, role: roles(invitation.role) })}
               </p>
               {invitation.already_member ? (
                 <>
-                  <p>You're already a member.</p>
+                  <p>{t("alreadyMember")}</p>
                   <Button variant="primary" onClick={() => onAccepted?.(invitation.org)}>
-                    Open {invitation.org.name}
+                    {t("open", { org: invitation.org.name })}
                   </Button>
                 </>
               ) : blocker ? (
@@ -98,10 +99,10 @@ function AcceptInvitationScreen({ accessToken, token, onAccepted, onDeclined }: 
               ) : (
                 <div className="d-flex gap-2 justify-content-center">
                   <Button variant="secondary" outline disabled={busy} onClick={() => void respond(false)}>
-                    Decline
+                    {t("decline")}
                   </Button>
                   <Button variant="primary" disabled={busy} onClick={() => void respond(true)}>
-                    Accept invitation
+                    {t("accept")}
                   </Button>
                 </div>
               )}

@@ -1,0 +1,38 @@
+import { defineMessages } from "platform-core";
+
+export default defineMessages({
+  en: {
+    title: "Team members",
+    loading: "Loading…",
+    empty: "Nobody in this team yet.",
+    name: "Name",
+    role: "Role",
+    you: " (you)",
+    noAccount: "No account",
+    noAccountTitle: "The team's lead checks in for them. Link them to an account on the org chart.",
+    roleOf: "Role of {name}",
+    leave: "Leave",
+    remove: "Remove",
+    addFromOrg: "Add someone from the organization",
+    pickMember: "Pick a member…",
+    everyoneIn: "Everyone is already in this team",
+    add: "Add",
+  },
+  vi: {
+    title: "Thành viên nhóm",
+    loading: "Đang tải…",
+    empty: "Nhóm này chưa có ai.",
+    name: "Tên",
+    role: "Vai trò",
+    you: " (bạn)",
+    noAccount: "Chưa có tài khoản",
+    noAccountTitle: "Trưởng nhóm check-in thay cho người này. Hãy liên kết họ với một tài khoản trên sơ đồ tổ chức.",
+    roleOf: "Vai trò của {name}",
+    leave: "Rời nhóm",
+    remove: "Gỡ",
+    addFromOrg: "Thêm người trong tổ chức",
+    pickMember: "Chọn một thành viên…",
+    everyoneIn: "Mọi người đều đã ở trong nhóm này",
+    add: "Thêm",
+  },
+});
