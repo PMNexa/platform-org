@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, useT } from "platform-core";
 import {
-  ROLE_LABELS,
   acceptInvitation,
   declineInvitation,
   errorMessage,
   listReceivedInvitations,
   type ReceivedInvitation,
 } from "../lib/api";
+import messages from "./InvitationsScreen.messages";
+import roleMessages from "./roles.messages";
 
 export interface InvitationsScreenProps {
   accessToken: string;
@@ -17,6 +18,8 @@ export interface InvitationsScreenProps {
 
 /** The invitations sent to the signed-in user's email that are still open: accept or decline each. */
 function InvitationsScreen({ accessToken, onAccepted }: InvitationsScreenProps) {
+  const t = useT(messages);
+  const roles = useT(roleMessages);
   const [invitations, setInvitations] = useState<ReceivedInvitation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,8 +49,8 @@ function InvitationsScreen({ accessToken, onAccepted }: InvitationsScreenProps) 
   return (
     <div className="container-xl py-3">
       <div className="mb-3">
-        <h2 className="page-title">Invitations</h2>
-        <div className="text-secondary">Organizations that invited you to join them.</div>
+        <h2 className="page-title">{t("title")}</h2>
+        <div className="text-secondary">{t("intro")}</div>
       </div>
       {error && (
         <div className="alert alert-danger" role="alert">
@@ -56,20 +59,20 @@ function InvitationsScreen({ accessToken, onAccepted }: InvitationsScreenProps) 
       )}
       <Card>
         <CardHeader>
-          <CardTitle>Pending</CardTitle>
+          <CardTitle>{t("pending")}</CardTitle>
         </CardHeader>
         {invitations === null ? (
-          <CardBody className="text-secondary">Loading…</CardBody>
+          <CardBody className="text-secondary">{t("loading")}</CardBody>
         ) : invitations.length === 0 ? (
-          <CardBody className="text-secondary">No pending invitations.</CardBody>
+          <CardBody className="text-secondary">{t("none")}</CardBody>
         ) : (
           <div className="table-responsive">
             <table className="table table-vcenter card-table">
               <thead>
                 <tr>
-                  <th>Organization</th>
-                  <th>Role</th>
-                  <th>Invited by</th>
+                  <th>{t("organization")}</th>
+                  <th>{t("role")}</th>
+                  <th>{t("invitedBy")}</th>
                   <th className="w-1" />
                 </tr>
               </thead>
@@ -77,15 +80,15 @@ function InvitationsScreen({ accessToken, onAccepted }: InvitationsScreenProps) 
                 {invitations.map((invitation) => (
                   <tr key={invitation.id}>
                     <td>{invitation.org.name}</td>
-                    <td>{ROLE_LABELS[invitation.role]}</td>
+                    <td>{roles(invitation.role)}</td>
                     <td className="text-secondary">{invitation.invited_by.name ?? invitation.invited_by.email ?? "—"}</td>
                     <td className="text-nowrap">
                       <div className="d-flex gap-2">
                         <Button variant="primary" onClick={() => void respond(invitation, true)}>
-                          Accept
+                          {t("accept")}
                         </Button>
                         <Button variant="secondary" outline onClick={() => void respond(invitation, false)}>
-                          Decline
+                          {t("decline")}
                         </Button>
                       </div>
                     </td>

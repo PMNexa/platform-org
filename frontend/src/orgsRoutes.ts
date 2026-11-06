@@ -1,3 +1,5 @@
+import { translate } from "platform-core";
+import messages from "./orgsNav.messages";
 import { createCrudRoutes, prefixRoutes, routeFilePath, type RouteEntry } from "platform-core";
 
 const ORGS_API_PATH = "/api/v1/orgs";
@@ -69,7 +71,7 @@ export function createOrgAdminRoutes(basePath: string): RouteEntry[] {
   ]);
 }
 
-/** The link to `createOrgAdminRoutes(basePath)` - e.g. for platform-core's `createSystemNavItems(base, [item])`. */
+/** The link to `createOrgAdminRoutes(basePath)` - e.g. for platform-core's `createSystemNavItems(base, [item])`. Its label is in the current language: call it at render time. */
 export function createOrgAdminNavItem(basePath: string) {
-  return { label: "All organizations", to: `/${basePath.replace(/^\/+|\/+$/g, "")}/all-orgs`, permission: "all-orgs.view" };
+  return { label: translate(messages, "allOrganizations"), to: `/${basePath.replace(/^\/+|\/+$/g, "")}/all-orgs`, permission: "all-orgs.view" };
 }
