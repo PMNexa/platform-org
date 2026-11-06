@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { CrudListScreen, SegmentedControl, type LinkComponentProps } from "platform-core";
 import { Link as RouterLink, useLocation, useOutletContext, useSearchParams } from "react-router";
 import TeamChartScreen from "../screens/TeamChartScreen";
+import { joinPath, mountPrefix } from "./paths";
 
 // oxlint-disable-next-line react/only-export-components
 export function meta() {
@@ -70,7 +71,12 @@ export default function TeamsRoute() {
         />
       </div>
       {view === "chart" ? (
-        <TeamChartScreen accessToken={accessToken} teamsPath={basePath} linkComponent={CrudLink} />
+        <TeamChartScreen
+          accessToken={accessToken}
+          teamsPath={basePath}
+          linkComponent={CrudLink}
+          invitationUrl={(token) => `${window.location.origin}${joinPath(mountPrefix(pathname, "teams"), "invitations", token)}`}
+        />
       ) : (
         <CrudListScreen
           key={basePath}

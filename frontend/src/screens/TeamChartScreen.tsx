@@ -5,6 +5,8 @@ import {
   addTeamMember,
   canManage,
   changeTeamRole,
+  convertPlaceholder,
+  createInvitation,
   createTeam,
   deleteTeam,
   errorMessage,
@@ -13,6 +15,7 @@ import {
   listMyOrgs,
   listOrgTeams,
   removeTeamMember,
+  updatePlaceholder,
   updateTeam,
   type Member,
   type OrgSummary,
@@ -27,6 +30,8 @@ export interface TeamChartScreenProps {
   teamsPath?: string;
   /** The host router's link - defaults to a plain `<a>`. */
   linkComponent?: LinkComponent;
+  /** The absolute accept-page URL for an invitation token - lets a placeholder be invited from the chart. */
+  invitationUrl?: (token: string) => string;
 }
 
 const ORG_KEY = "platform-org:team-chart-org";
@@ -72,12 +77,15 @@ button.po-role:hover{border-color:currentColor}
 .po-link{border:0;background:none;padding:0;color:var(--tblr-primary,#206bc4)}
 .po-link:hover{text-decoration:underline}
 .po-muted{color:var(--tblr-secondary,#667382)}
+.po-tag{font-size:11px;line-height:16px;padding:0 6px;border-radius:8px;background:var(--tblr-bg-surface-tertiary,#eef1f5);color:var(--tblr-secondary,#667382);white-space:nowrap}
+.po-placeholder .po-person{font-style:italic}
 `;
 
 type Dialog =
   | { kind: "team"; team: TeamWithPosition | null; parent: string | null }
   | { kind: "delete"; team: TeamWithPosition }
   | { kind: "member"; team: TeamWithPosition }
+  | { kind: "person"; membership: TeamMember }
   | null;
 
 function readStoredOrg(): string {
@@ -109,7 +117,7 @@ function descendants(children: Map<string | null, TeamWithPosition[]>, id: strin
  * leave a team). The API enforces all of it; this only hides what would
  * fail.
  */
-function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = DefaultLink }: TeamChartScreenProps) {
+function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = DefaultLink, invitationUrl }: TeamChartScreenProps) {
   const [orgs, setOrgs] = useState<OrgSummary[] | null>(null);
   const [orgId, setOrgId] = useState(readStoredOrg);
   const [teams, setTeams] = useState<TeamWithPosition[]>([]);
@@ -192,6 +200,12 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
 
   const inAnyTeam = new Set(memberships.map((m) => m.user_id));
   const unassigned = people.filter((p) => !inAnyTeam.has(p.user_id));
+  // People with no account yet, once each (they may be in several teams).
+  const placeholders = useMemo(() => {
+    const seen = new Map<string, TeamMember>();
+    for (const m of memberships) if (m.placeholder && !seen.has(m.user_id)) seen.set(m.user_id, m);
+    return [...seen.values()].sort((a, b) => personName(a).localeCompare(personName(b)));
+  }, [memberships]);
 
   function toggle(id: string) {
     setCollapsed((current) => {
@@ -233,12 +247,22 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
           {rows.length > 0 && (
             <ul className="po-people">
               {rows.map((m) => (
-                <li key={m.id}>
+                <li key={m.id} className={m.placeholder ? "po-placeholder" : undefined}>
                   <Avatar name={personName(m)} />
-                  <span className="po-person" title={m.email ?? undefined}>
+                  <span className="po-person" title={m.placeholder ? "No account yet - the team's lead checks in for them" : (m.email ?? undefined)}>
                     {personName(m)}
                     {m.is_me && <span className="po-muted"> (you)</span>}
                   </span>
+                  {m.placeholder &&
+                    (manager ? (
+                      <button type="button" className="po-role" disabled={busy} title="Rename, invite or link to an account"
+                        aria-label={`${personName(m)} has no account - rename, invite or link to an account`}
+                        onClick={() => setDialog({ kind: "person", membership: m })}>
+                        No account
+                      </button>
+                    ) : (
+                      <span className="po-tag">No account</span>
+                    ))}
                   {manager ? (
                     <button type="button" className={`po-role${m.role === "lead" ? " po-lead" : ""}`} disabled={busy}
                       title={m.role === "lead" ? "Make a member" : "Make lead"}
@@ -363,11 +387,39 @@ function TeamChartScreen({ accessToken, teamsPath, linkComponent: Link = Default
         <MemberDialog
           team={dialog.team}
           candidates={people.filter((p) => !(byTeam.get(dialog.team.id) ?? []).some((m) => m.user_id === p.user_id))}
+          placeholders={placeholders.filter((p) => !(byTeam.get(dialog.team.id) ?? []).some((m) => m.user_id === p.user_id))}
           busy={busy}
           onClose={() => setDialog(null)}
-          onAdd={(userId, role) =>
-            void run(() => addTeamMember(accessToken, { team: dialog.team.id, user_id: userId, role })).then((ok) => ok && setDialog(null))
+          onAdd={(person, role) =>
+            void run(() => addTeamMember(accessToken, { team: dialog.team.id, role, ...person })).then((ok) => ok && setDialog(null))
           }
+        />
+      )}
+      {org && dialog?.kind === "person" && (
+        <PersonDialog
+          membership={dialog.membership}
+          members={people}
+          canInvite={Boolean(invitationUrl)}
+          busy={busy}
+          error={error}
+          onClose={() => setDialog(null)}
+          onRename={(name, email) =>
+            void run(() =>
+              updatePlaceholder(accessToken, dialog.membership.id, { placeholder_name: name, placeholder_email: email }),
+            ).then((ok) => ok && setDialog(null))
+          }
+          onLink={(userId) =>
+            void run(() => convertPlaceholder(accessToken, dialog.membership.id, userId)).then((ok) => ok && setDialog(null))
+          }
+          onInvite={async (email) => {
+            let token = "";
+            const ok = await run(async () => {
+              // The email first: accepting the invitation then links the placeholder by it.
+              await updatePlaceholder(accessToken, dialog.membership.id, { placeholder_email: email });
+              token = (await createInvitation(accessToken, { org: org.id, email, role: "member" })).token;
+            });
+            return ok && invitationUrl ? invitationUrl(token) : null;
+          }}
         />
       )}
     </Card>
@@ -478,24 +530,35 @@ function DeleteDialog({
   );
 }
 
+const NEW_PERSON = "__new__";
+
+type NewPerson = { user_id: string } | { placeholder_name: string; placeholder_email?: string };
+
 function MemberDialog({
   team,
   candidates,
+  placeholders,
   busy,
   onClose,
   onAdd,
 }: {
   team: TeamWithPosition;
   candidates: Member[];
+  placeholders: TeamMember[];
   busy: boolean;
   onClose: () => void;
-  onAdd: (userId: string, role: TeamRole) => void;
+  onAdd: (person: NewPerson, role: TeamRole) => void;
 }) {
   const [pick, setPick] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState<TeamRole>("member");
+  const isNew = pick === NEW_PERSON;
+  const ready = isNew ? Boolean(name.trim()) : Boolean(pick);
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pick) onAdd(pick, role);
+    if (!ready) return;
+    onAdd(isNew ? { placeholder_name: name.trim(), placeholder_email: email.trim() } : { user_id: pick }, role);
   }
   return (
     <Modal
@@ -506,7 +569,7 @@ function MemberDialog({
       footer={
         <>
           <Button variant="secondary" outline onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" form="po-member-form" disabled={busy || !pick}>Add</Button>
+          <Button type="submit" variant="primary" form="po-member-form" disabled={busy || !ready}>Add</Button>
         </>
       }
     >
@@ -514,16 +577,44 @@ function MemberDialog({
         <div className="mb-3">
           <FormLabel htmlFor="po-member-pick" required>Person</FormLabel>
           <FormSelect id="po-member-pick" autoFocus value={pick} onChange={(e) => setPick(e.target.value)}>
-            <option value="">{candidates.length ? "Pick a member of the organization…" : "Everyone is already in this team"}</option>
-            {candidates.map((m) => (
-              <option key={m.user_id} value={m.user_id}>
-                {m.name ?? m.email}
-                {m.name && m.email ? ` (${m.email})` : ""}
-              </option>
-            ))}
+            <option value="">Pick a person…</option>
+            {candidates.length > 0 && (
+              <optgroup label="Members of the organization">
+                {candidates.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>
+                    {m.name ?? m.email}
+                    {m.name && m.email ? ` (${m.email})` : ""}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {placeholders.length > 0 && (
+              <optgroup label="No account yet">
+                {placeholders.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{personName(m)}</option>
+                ))}
+              </optgroup>
+            )}
+            <option value={NEW_PERSON}>+ Someone without an account…</option>
           </FormSelect>
-          <small className="form-hint">Not listed? Invite them to the organization first.</small>
+          {!isNew && <small className="form-hint">Not listed? Invite them to the organization, or add them without an account.</small>}
         </div>
+        {isNew && (
+          <>
+            <div className="mb-3">
+              <FormLabel htmlFor="po-member-name" required>Name</FormLabel>
+              <FormControl id="po-member-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Hana Tran" />
+            </div>
+            <div className="mb-3">
+              <FormLabel htmlFor="po-member-email">Email</FormLabel>
+              <FormControl id="po-member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" />
+              <small className="form-hint">
+                They take part like anyone else, and the team's lead checks in for them. Link them to an account
+                later - or, with an email, they're linked when they accept an invitation sent to it.
+              </small>
+            </div>
+          </>
+        )}
         <div>
           <FormLabel htmlFor="po-member-role">Role</FormLabel>
           <FormSelect id="po-member-role" value={role} onChange={(e) => setRole(e.target.value as TeamRole)}>
@@ -532,6 +623,132 @@ function MemberDialog({
           </FormSelect>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+/** A placeholder's own dialog: rename, link to an existing member's account, or invite them by email. */
+function PersonDialog({
+  membership,
+  members,
+  canInvite,
+  busy,
+  error,
+  onClose,
+  onRename,
+  onLink,
+  onInvite,
+}: {
+  membership: TeamMember;
+  members: Member[];
+  canInvite: boolean;
+  busy: boolean;
+  error: string | null;
+  onClose: () => void;
+  onRename: (name: string, email: string) => void;
+  onLink: (userId: string) => void;
+  onInvite: (email: string) => Promise<string | null>;
+}) {
+  const [name, setName] = useState(membership.name ?? "");
+  const [email, setEmail] = useState(membership.email ?? "");
+  const [account, setAccount] = useState("");
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const who = membership.name ?? "this person";
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={membership.name ?? "No account yet"}
+      footer={<Button variant="secondary" outline onClick={onClose}>Close</Button>}
+    >
+      {error && <div className="alert alert-danger" role="alert">{error}</div>}
+      <p className="text-secondary">
+        {who} has no account yet: the team's lead checks in for them. Once they have one, link it - their team
+        places and goals, with every check-in, become theirs.
+      </p>
+      <form
+        className="mb-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (name.trim()) onRename(name.trim(), email.trim());
+        }}
+      >
+        <div className="row g-2 align-items-end">
+          <div className="col-sm-5">
+            <FormLabel htmlFor="po-person-name" required>Name</FormLabel>
+            <FormControl id="po-person-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="col-sm-5">
+            <FormLabel htmlFor="po-person-email">Email</FormLabel>
+            <FormControl id="po-person-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" />
+          </div>
+          <div className="col-sm-2">
+            <Button type="submit" variant="secondary" outline disabled={busy || !name.trim()}>Save</Button>
+          </div>
+        </div>
+      </form>
+      <h4>Link to an account</h4>
+      <form
+        className="row g-2 align-items-end mb-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (account) onLink(account);
+        }}
+      >
+        <div className="col-sm-9">
+          <FormLabel htmlFor="po-person-account">A member of the organization</FormLabel>
+          <FormSelect id="po-person-account" value={account} onChange={(e) => setAccount(e.target.value)}>
+            <option value="">Pick who {who} is…</option>
+            {members.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.name ?? m.email}
+                {m.name && m.email ? ` (${m.email})` : ""}
+              </option>
+            ))}
+          </FormSelect>
+        </div>
+        <div className="col-sm-3">
+          <Button type="submit" variant="primary" disabled={busy || !account}>Link</Button>
+        </div>
+      </form>
+      {canInvite && (
+        <>
+          <h4>Not a member yet? Invite them</h4>
+          <form
+            className="row g-2 align-items-end"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!email.trim()) return;
+              void onInvite(email.trim()).then((link) => {
+                setInviteLink(link);
+                setCopied(false);
+              });
+            }}
+          >
+            <div className="col-sm-9">
+              <FormLabel htmlFor="po-person-invite">Their email</FormLabel>
+              <FormControl id="po-person-invite" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="col-sm-3">
+              <Button type="submit" variant="secondary" outline disabled={busy || !email.trim()}>Invite</Button>
+            </div>
+          </form>
+          {inviteLink && (
+            <div className="mt-2">
+              <small className="form-hint">
+                Send them this link - no email is sent. When they accept it, {who} becomes their account.
+              </small>
+              <div className="input-group mt-1">
+                <input className="form-control" readOnly value={inviteLink} aria-label="Invitation link" />
+                <Button variant="secondary" outline onClick={() => void navigator.clipboard.writeText(inviteLink).then(() => setCopied(true))}>
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </Modal>
   );
 }

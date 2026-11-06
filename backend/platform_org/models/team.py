@@ -48,3 +48,23 @@ class TeamMembership(TimestampedModel):
         db_table = "team_membership"
         verbose_name = "team member"
         constraints = [models.UniqueConstraint(fields=["team", "user_id"], name="uq_team_membership_team_user")]
+
+
+class Placeholder(TimestampedModel):
+    """Someone in a team who has no account (yet) - a name, and maybe the
+    email they'll sign up with. Their id stands in for a user id
+    everywhere a team member is referenced by bare id (`TeamMembership.
+    user_id`, other modules' rows, e.g. goalnexa's member copies), so a
+    placeholder takes part like anyone else, except that they never sign
+    in: the team's lead checks in for them. `placeholders.convert` turns
+    one into an account - every row moves to the user, then it's deleted.
+    Accepting an org invitation sent to the placeholder's email does that
+    by itself."""
+
+    id = models.UUIDField(primary_key=True, default=generate_uuid7, editable=False)
+    org = models.ForeignKey(Organization, on_delete=models.CASCADE, db_column="org_id", related_name="placeholders")
+    name = models.CharField(max_length=255)
+    email = models.EmailField(blank=True, default="", db_default="")
+
+    class Meta:
+        db_table = "placeholder"

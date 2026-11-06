@@ -204,6 +204,11 @@ class AcceptInvitationView(APIView):
         invitation.status = OrgInvitationStatus.ACCEPTED
         invitation.responded_at = timezone.now()
         invitation.save(update_fields=["status", "responded_at", "updated_at"])
+        # A placeholder with this email (someone in a team before they had
+        # an account) becomes this user: their team places and goals move.
+        from platform_org.placeholders import convert_by_email
+
+        convert_by_email(invitation.org_id, invitation.email, request.user.id)
         return Response({"org": {"id": str(invitation.org_id), "name": invitation.org.name}, "role": membership.role})
 
 

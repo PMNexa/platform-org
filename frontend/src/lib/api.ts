@@ -192,6 +192,8 @@ export interface TeamMember {
   email: string | null;
   role: TeamRole;
   is_me: boolean;
+  /** Someone with no account yet - the team's lead checks in for them; link them to an account later. */
+  placeholder: boolean;
 }
 
 export function getTeam(accessToken: string, teamId: string): Promise<Team> {
@@ -203,15 +205,33 @@ export async function listTeamMembers(accessToken: string, teamId: string): Prom
   return body.items;
 }
 
+/** `user_id` = an org member or an existing placeholder; or `placeholder_name` (+ email) adds someone with no account. */
 export function addTeamMember(
   accessToken: string,
-  input: { team: string; user_id: string; role: TeamRole },
+  input: { team: string; role: TeamRole } & (
+    | { user_id: string }
+    | { placeholder_name: string; placeholder_email?: string }
+  ),
 ): Promise<TeamMember> {
   return apiRequest<TeamMember>("/team-members", accessToken, { method: "POST", data: input });
 }
 
 export function changeTeamRole(accessToken: string, membershipId: string, role: TeamRole): Promise<TeamMember> {
   return apiRequest<TeamMember>(`/team-members/${membershipId}`, accessToken, { method: "PATCH", data: { role } });
+}
+
+/** Rename a placeholder, or set the email an invitation will link them by (every team they're in). */
+export function updatePlaceholder(
+  accessToken: string,
+  membershipId: string,
+  input: { placeholder_name?: string; placeholder_email?: string },
+): Promise<TeamMember> {
+  return apiRequest<TeamMember>(`/team-members/${membershipId}`, accessToken, { method: "PATCH", data: input });
+}
+
+/** A placeholder becomes an org member's account: their team places and goals move to them. */
+export function convertPlaceholder(accessToken: string, membershipId: string, userId: string): Promise<void> {
+  return apiRequest<void>(`/team-members/${membershipId}/convert`, accessToken, { method: "POST", data: { user_id: userId } });
 }
 
 export function removeTeamMember(accessToken: string, membershipId: string): Promise<void> {
