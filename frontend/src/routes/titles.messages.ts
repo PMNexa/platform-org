@@ -8,6 +8,7 @@ export default defineMessages({
     invitations: "Invitations",
     organization: "Organization",
     team: "Team",
+    teams: "Teams",
   },
   vi: {
     organizationAdmin: "Tổ chức (quản trị)",
@@ -15,5 +16,6 @@ export default defineMessages({
     invitations: "Lời mời",
     organization: "Tổ chức",
     team: "Nhóm",
+    teams: "Nhóm",
   },
 });

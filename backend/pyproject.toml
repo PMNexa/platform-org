@@ -26,3 +26,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["platform_org*"]
+
+# The API's translations (.po + compiled .mo - platform-core's
+# `manage.py collect_ui_strings`).
+[tool.setuptools.package-data]
+platform_org = ["locale/**/*"]

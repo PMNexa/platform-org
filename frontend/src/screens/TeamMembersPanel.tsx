@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type SubmitEvent } from "react";
-import { Button, Card, CardBody, CardHeader, CardTitle, FormLabel, FormSelect } from "platform-core";
+import { Button, Card, CardBody, CardHeader, CardTitle, FormLabel, FormSelect, useT } from "platform-core";
 import {
-  TEAM_ROLE_LABELS,
+  TEAM_ROLES,
   addTeamMember,
   canManage,
   changeTeamRole,
@@ -15,6 +15,8 @@ import {
   type TeamMember,
   type TeamRole,
 } from "../lib/api";
+import messages from "./TeamMembersPanel.messages";
+import roleMessages from "./roles.messages";
 
 export interface TeamMembersPanelProps {
   accessToken: string;
@@ -29,6 +31,8 @@ export interface TeamMembersPanelProps {
  * enforces all of it; this only hides what would fail.
  */
 function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
+  const t = useT(messages);
+  const roleT = useT(roleMessages);
   const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [orgMembers, setOrgMembers] = useState<Member[]>([]);
   const [manager, setManager] = useState(false);
@@ -78,21 +82,21 @@ function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
   return (
     <Card className="mt-3">
       <CardHeader>
-        <CardTitle>Team members</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardBody>
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
         {members === null ? (
-          <div className="text-secondary">Loading…</div>
+          <div className="text-secondary">{t("loading")}</div>
         ) : members.length === 0 ? (
-          <p className="text-secondary">Nobody in this team yet.</p>
+          <p className="text-secondary">{t("empty")}</p>
         ) : (
           <div className="table-responsive">
             <table className="table table-vcenter mb-3">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Role</th>
+                  <th>{t("name")}</th>
+                  <th>{t("role")}</th>
                   <th className="w-1"></th>
                 </tr>
               </thead>
@@ -101,10 +105,10 @@ function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
                   <tr key={member.id}>
                     <td>
                       {member.name ?? member.email ?? member.user_id}
-                      {member.is_me && <span className="text-secondary"> (you)</span>}
+                      {member.is_me && <span className="text-secondary">{t("you")}</span>}
                       {member.placeholder && (
-                        <span className="badge bg-secondary-lt ms-2" title="The team's lead checks in for them. Link them to an account on the org chart.">
-                          No account
+                        <span className="badge bg-secondary-lt ms-2" title={t("noAccountTitle")}>
+                          {t("noAccount")}
                         </span>
                       )}
                       {member.email && member.name && <div className="text-secondary small">{member.email}</div>}
@@ -112,17 +116,17 @@ function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
                     <td>
                       {manager ? (
                         <FormSelect
-                          aria-label={`Role of ${member.name ?? member.email}`}
+                          aria-label={t("roleOf", { name: member.name ?? member.email ?? "" })}
                           value={member.role}
                           disabled={busy}
                           onChange={(e) => void run(() => changeTeamRole(accessToken, member.id, e.target.value as TeamRole))}
                         >
-                          {(Object.keys(TEAM_ROLE_LABELS) as TeamRole[]).map((r) => (
-                            <option key={r} value={r}>{TEAM_ROLE_LABELS[r]}</option>
+                          {TEAM_ROLES.map((r) => (
+                            <option key={r} value={r}>{roleT(r)}</option>
                           ))}
                         </FormSelect>
                       ) : (
-                        TEAM_ROLE_LABELS[member.role]
+                        roleT(member.role)
                       )}
                     </td>
                     <td>
@@ -133,7 +137,7 @@ function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
                           disabled={busy}
                           onClick={() => void run(() => removeTeamMember(accessToken, member.id))}
                         >
-                          {member.is_me ? "Leave" : "Remove"}
+                          {member.is_me ? t("leave") : t("remove")}
                         </Button>
                       )}
                     </td>
@@ -146,24 +150,24 @@ function TeamMembersPanel({ accessToken, teamId }: TeamMembersPanelProps) {
         {manager && (
           <form className="row g-2 align-items-end" onSubmit={add}>
             <div className="col-sm-6">
-              <FormLabel htmlFor="team-member-pick">Add someone from the organization</FormLabel>
+              <FormLabel htmlFor="team-member-pick">{t("addFromOrg")}</FormLabel>
               <FormSelect id="team-member-pick" value={pick} onChange={(e) => setPick(e.target.value)}>
-                <option value="">{candidates.length ? "Pick a member…" : "Everyone is already in this team"}</option>
+                <option value="">{candidates.length ? t("pickMember") : t("everyoneIn")}</option>
                 {candidates.map((m) => (
                   <option key={m.user_id} value={m.user_id}>{m.name ?? m.email}</option>
                 ))}
               </FormSelect>
             </div>
             <div className="col-sm-3">
-              <FormLabel htmlFor="team-member-role">Role</FormLabel>
+              <FormLabel htmlFor="team-member-role">{t("role")}</FormLabel>
               <FormSelect id="team-member-role" value={role} onChange={(e) => setRole(e.target.value as TeamRole)}>
-                {(Object.keys(TEAM_ROLE_LABELS) as TeamRole[]).map((r) => (
-                  <option key={r} value={r}>{TEAM_ROLE_LABELS[r]}</option>
+                {TEAM_ROLES.map((r) => (
+                  <option key={r} value={r}>{roleT(r)}</option>
                 ))}
               </FormSelect>
             </div>
             <div className="col-auto">
-              <Button type="submit" variant="primary" disabled={busy || !pick}>Add</Button>
+              <Button type="submit" variant="primary" disabled={busy || !pick}>{t("add")}</Button>
             </div>
           </form>
         )}

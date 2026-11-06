@@ -25,6 +25,7 @@ from django.conf import settings
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.translation import gettext, gettext_noop
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -82,7 +83,7 @@ def _check_member_limit(org, *, accepting: bool = False) -> None:
     now = timezone.now()
     open_invitations = OrgInvitation.objects.filter(org=org, status=OrgInvitationStatus.PENDING, expires_at__gt=now).count()
     current = active_memberships().filter(org=org).count() + open_invitations - (1 if accepting else 0)
-    check_org_limit(org.id, "max_members", current, "members")
+    check_org_limit(org.id, "max_members", current, gettext_noop("members"))
 
 
 def _email_invitation(request, invitation: OrgInvitation) -> None:
@@ -141,7 +142,7 @@ def _check_addressee(request, invitation: OrgInvitation) -> None:
     email = email_of(request.user)
     if email != invitation.email:
         raise PermissionDenied(
-            f"This invitation was sent to {invitation.email}. Sign in with that email to respond to it."
+            gettext("This invitation was sent to {email}. Sign in with that email to respond to it.").format(email=invitation.email)
         )
     if not invitation.is_open:
         raise ValidationError({"token": ["This invitation is no longer valid."]})

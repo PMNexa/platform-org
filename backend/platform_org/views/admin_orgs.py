@@ -15,6 +15,7 @@ and:
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.utils.translation import gettext
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -42,10 +43,10 @@ class AdminOrganizationSerializer(BaseSerializer):
 
     def validate_limits(self, value):
         if not isinstance(value, dict) or set(value) - set(LIMIT_KEYS):
-            raise serializers.ValidationError(f"An object with any of: {', '.join(LIMIT_KEYS)}.")
+            raise serializers.ValidationError(gettext("An object with any of: {keys}.").format(keys=", ".join(LIMIT_KEYS)))
         for key, limit in value.items():
             if not isinstance(limit, int) or isinstance(limit, bool) or limit < 0:
-                raise serializers.ValidationError(f"{key}: a whole number, 0 for unlimited.")
+                raise serializers.ValidationError(gettext("{key}: a whole number, 0 for unlimited.").format(key=key))
         return value
 
 

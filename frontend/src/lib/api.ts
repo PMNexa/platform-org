@@ -1,5 +1,8 @@
 import axios from "axios";
 import type { AxiosRequestConfig } from "axios";
+import { translate } from "platform-core";
+import roleMessages from "../screens/roles.messages";
+import messages from "./api.messages";
 
 /**
  * No token store of its own - the host passes the session's access token
@@ -29,14 +32,14 @@ export async function apiRequest<T>(path: string, accessToken: string, config?: 
     return (response.status === 204 ? undefined : response.data) as T;
   } catch (error) {
     if (!axios.isAxiosError(error)) throw error;
-    if (!error.response) throw new ApiError(error.message || "Network request failed", 0);
+    if (!error.response) throw new ApiError(error.message || translate(messages, "networkFailed"), 0);
     const { status, data } = error.response;
     const body = data as { message?: unknown; field_errors?: Record<string, string[]> } | null;
     const message = body?.field_errors
       ? Object.values(body.field_errors).flat().join(" ")
       : typeof body?.message === "string"
         ? body.message
-        : `Request to ${url} failed with status ${status}`;
+        : translate(messages, "requestFailed", { url, status });
     throw new ApiError(message, status);
   }
 }
@@ -45,7 +48,18 @@ export type OrgRole = "owner" | "admin" | "member";
 /** Roles an invitation can carry - ownership is handed over on the members list. */
 export type InvitationRole = Exclude<OrgRole, "owner">;
 
-export const ROLE_LABELS: Record<OrgRole, string> = { owner: "Owner", admin: "Admin", member: "Member" };
+/**
+ * Role names, each in the UI language at the time it's read. Inside a
+ * component prefer `useT(roles.messages)` (re-renders on a switch).
+ */
+function roleLabels<R extends string>(roles: readonly R[]): Record<R, string> {
+  return Object.defineProperties(
+    {} as Record<R, string>,
+    Object.fromEntries(roles.map((role) => [role, { get: () => translate(roleMessages, role as "owner"), enumerable: true }])),
+  );
+}
+
+export const ROLE_LABELS: Record<OrgRole, string> = roleLabels<OrgRole>(["owner", "admin", "member"]);
 
 export function canManage(role: OrgRole | null | undefined): boolean {
   return role === "owner" || role === "admin";
@@ -156,7 +170,7 @@ export async function getPublicInvitation(token: string): Promise<PublicInvitati
   try {
     return (await axios.get<PublicInvitation>(url)).data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) throw new ApiError("This invitation link isn't valid.", 404);
+    if (axios.isAxiosError(error) && error.response?.status === 404) throw new ApiError(translate(messages, "invitationInvalid"), 404);
     throw error;
   }
 }
@@ -175,7 +189,9 @@ export function errorMessage(thrown: unknown): string {
 
 export type TeamRole = "lead" | "member";
 
-export const TEAM_ROLE_LABELS: Record<TeamRole, string> = { lead: "Lead", member: "Member" };
+export const TEAM_ROLES: readonly TeamRole[] = ["lead", "member"];
+
+export const TEAM_ROLE_LABELS: Record<TeamRole, string> = roleLabels<TeamRole>(TEAM_ROLES);
 
 export interface Team {
   id: string;
